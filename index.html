@@ -25,13 +25,49 @@
       <div class="stats-grid">
         <div class="stat">
           <small>Peso actual</small>
-          <strong>75.7 kg</strong>
+          <strong id="currentWeightStat">Sin registro</strong>
         </div>
         <div class="stat">
           <small>Objetivo</small>
           <strong>Bajar grasa + músculo</strong>
         </div>
       </div>
+    </section>
+
+    <section class="weight-card">
+      <div class="weight-header">
+        <div>
+          <h2>Control de peso corporal</h2>
+          <p>Consulta tu peso en kg y mira si vas subiendo, bajando o te mantienes igual. El registro se abre desde el botón inferior.</p>
+        </div>
+        <div class="weight-status" id="weightTrendBadge">Sin datos</div>
+      </div>
+
+      <div class="weight-kpis">
+        <div class="stat">
+          <small>Último peso</small>
+          <strong id="latestWeight">-- kg</strong>
+        </div>
+        <div class="stat">
+          <small>Cambio anterior</small>
+          <strong id="lastWeightChange">-- kg</strong>
+        </div>
+        <div class="stat">
+          <small>Cambio total</small>
+          <strong id="totalWeightChange">-- kg</strong>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div id="weightChart" class="weight-chart"></div>
+        <div id="weightChartEmpty" class="chart-empty">Agrega al menos 2 registros para ver la gráfica.</div>
+      </div>
+
+      <div class="weight-history-title">
+        <h3>Últimos registros</h3>
+        <span>Todo se guarda en la hoja “Pesos”.</span>
+      </div>
+      <div id="weightHistoryList" class="mini-list"></div>
     </section>
 
     <section class="days-card">
@@ -103,7 +139,53 @@
         <div id="weakList" class="mini-list"></div>
       </article>
     </section>
+
+    <section class="bottom-weight-action">
+      <div>
+        <h3>¿Quieres registrar tu peso de hoy?</h3>
+        <p>Guárdalo en kg para actualizar tu gráfica y comparar si subiste, bajaste o te mantuviste igual.</p>
+      </div>
+      <button id="openWeightModalBtn" class="btn primary">Registrar peso corporal</button>
+    </section>
   </main>
+
+  <footer class="footer">
+    <p>Seguimiento personal de rutinas · Google Sheets + Apps Script + Netlify</p>
+  </footer>
+
+  <div id="weightModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="weightModalTitle">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow modal-eyebrow">Registro corporal</p>
+          <h2 id="weightModalTitle">Registrar peso en kg</h2>
+          <p>Lo ideal es pesarte en condiciones parecidas: por ejemplo, en ayunas o antes de entrenar.</p>
+        </div>
+        <button id="closeWeightModalBtn" class="modal-close" type="button" aria-label="Cerrar formulario">×</button>
+      </div>
+
+      <div class="modal-form">
+        <label>
+          Fecha
+          <input id="bodyWeightDate" type="date" />
+        </label>
+        <label>
+          Peso corporal en kg
+          <input id="bodyWeightInput" type="number" step="0.1" min="30" max="250" placeholder="Ej: 75.7" />
+        </label>
+        <label>
+          Nota opcional
+          <input id="bodyWeightNotes" type="text" maxlength="100" placeholder="Ej: en ayunas, después de entrenar..." />
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveWeightBtn" class="btn primary">Guardar peso</button>
+        <button id="cancelWeightModalBtn" class="btn secondary" type="button">Cancelar</button>
+      </div>
+    </section>
+  </div>
 
   <div id="toast" class="toast"></div>
 
