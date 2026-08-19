@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguimiento de Rutinas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Gimnasio Impulso · San Cristóbal</p>
+      <h1>Seguimiento de Rutinas</h1>
+      <p>Bajar grasa, ganar músculo y saber en qué ejercicios estás fallando.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="status-card">
+      <div>
+        <span id="todayBadge" class="badge">Cargando...</span>
+        <h2 id="todayTitle">Validando día...</h2>
+        <p id="todayMessage">Conectando con Google Sheets.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat">
+          <small>Peso actual</small>
+          <strong>75.7 kg</strong>
+        </div>
+        <div class="stat">
+          <small>Objetivo</small>
+          <strong>Bajar grasa + músculo</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="days-card">
+      <h3>Días de entrenamiento</h3>
+      <div id="dayTabs" class="day-tabs"></div>
+    </section>
+
+    <section class="routine-card">
+      <div class="routine-header">
+        <div>
+          <h2 id="routineTitle">Rutina</h2>
+          <p id="routineDescription">Selecciona un día.</p>
+        </div>
+        <div class="progress-box">
+          <div class="progress-label">
+            <span>Progreso</span>
+            <strong id="progressText">0%</strong>
+          </div>
+          <div class="progress-bar">
+            <div id="progressFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <label id="makeupBox" class="makeup-box">
+        <input type="checkbox" id="allowMakeup" />
+        <span>Registrar como reposición / rutina fuera de día</span>
+      </label>
+
+      <div id="warningBox" class="warning-box"></div>
+
+      <div id="exerciseList" class="exercise-list"></div>
+
+      <div class="form-grid">
+        <label>
+          Razón principal si no terminé
+          <select id="failReason">
+            <option value="">Seleccionar...</option>
+            <option>Falta de tiempo</option>
+            <option>Gym muy lleno</option>
+            <option>Cansancio</option>
+            <option>Dolor o molestia</option>
+            <option>Falta de energía</option>
+            <option>No sabía usar la máquina</option>
+            <option>Otro</option>
+          </select>
+        </label>
+
+        <label>
+          Notas generales
+          <textarea id="generalNotes" maxlength="200" placeholder="Ejemplo: me faltó tiempo, subí peso, hoy me sentí cansado..."></textarea>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn" class="btn primary">Guardar avance</button>
+        <button id="resetBtn" class="btn secondary">Reiniciar día</button>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="dashboard-card">
+        <h3>Últimas sesiones</h3>
+        <div id="historyList" class="mini-list"></div>
+      </article>
+
+      <article class="dashboard-card">
+        <h3>Ejercicios que más fallas</h3>
+        <div id="weakList" class="mini-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
