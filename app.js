@@ -8,6 +8,22 @@ const $ = (id) => document.getElementById(id);
 const todayBadge = $('todayBadge');
 const todayTitle = $('todayTitle');
 const todayMessage = $('todayMessage');
+const currentWeightStat = $('currentWeightStat');
+const latestWeight = $('latestWeight');
+const lastWeightChange = $('lastWeightChange');
+const totalWeightChange = $('totalWeightChange');
+const weightTrendBadge = $('weightTrendBadge');
+const bodyWeightDate = $('bodyWeightDate');
+const bodyWeightInput = $('bodyWeightInput');
+const bodyWeightNotes = $('bodyWeightNotes');
+const saveWeightBtn = $('saveWeightBtn');
+const weightChart = $('weightChart');
+const weightChartEmpty = $('weightChartEmpty');
+const weightHistoryList = $('weightHistoryList');
+const openWeightModalBtn = $('openWeightModalBtn');
+const weightModal = $('weightModal');
+const closeWeightModalBtn = $('closeWeightModalBtn');
+const cancelWeightModalBtn = $('cancelWeightModalBtn');
 const dayTabs = $('dayTabs');
 const routineTitle = $('routineTitle');
 const routineDescription = $('routineDescription');
@@ -77,6 +93,35 @@ function setLoading(isLoading) {
   saveBtn.textContent = isLoading ? 'Guardando...' : 'Guardar avance';
 }
 
+function setWeightLoading(isLoading) {
+  saveWeightBtn.disabled = isLoading;
+  saveWeightBtn.textContent = isLoading ? 'Guardando...' : 'Guardar peso';
+}
+
+function openWeightModal() {
+  if (!weightModal) return;
+
+  if (appData && !bodyWeightDate.value) {
+    bodyWeightDate.value = appData.dateKey;
+  }
+
+  weightModal.classList.add('show');
+  weightModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+
+  setTimeout(() => {
+    if (bodyWeightInput) bodyWeightInput.focus();
+  }, 80);
+}
+
+function closeWeightModal() {
+  if (!weightModal) return;
+
+  weightModal.classList.remove('show');
+  weightModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+}
+
 async function loadData(day = '') {
   try {
     selectedDay = day || selectedDay;
@@ -94,6 +139,7 @@ async function loadData(day = '') {
 
 function renderAll() {
   renderStatus();
+  renderBodyWeight();
   renderTabs();
   renderRoutine();
   renderHistory();
@@ -113,6 +159,171 @@ function renderStatus() {
     todayBadge.className = 'badge rest';
     todayTitle.textContent = `Hoy es ${appData.todayDay}`;
     todayMessage.textContent = `Tu próximo entrenamiento sugerido es ${appData.selectedDay}.`;
+  }
+}
+
+function renderBodyWeight() {
+  const data = appData.bodyWeight || { history: [], chart: [], latest: null, previous: null };
+  const latest = data.latest;
+
+  if (!bodyWeightDate.value) {
+    bodyWeightDate.value = appData.dateKey;
+  }
+
+  if (latest) {
+    currentWeightStat.textContent = formatKg(latest.weightKg);
+    latestWeight.textContent = formatKg(latest.weightKg);
+  } else {
+    currentWeightStat.textContent = 'Sin registro';
+    latestWeight.textContent = '-- kg';
+  }
+
+  if (latest && latest.changeKg !== '') {
+    lastWeightChange.textContent = formatChange(latest.changeKg);
+  } else {
+    lastWeightChange.textContent = '-- kg';
+  }
+
+  if (data.totalChange !== '') {
+    totalWeightChange.textContent = formatChange(data.totalChange);
+  } else {
+    totalWeightChange.textContent = '-- kg';
+  }
+
+  weightTrendBadge.textContent = data.totalStatus || 'Sin datos';
+  weightTrendBadge.className = 'weight-status ' + trendClass(data.totalStatus || '');
+
+  renderWeightChart(data.chart || []);
+  renderWeightHistory(data.history || []);
+}
+
+function renderWeightChart(rows) {
+  weightChart.innerHTML = '';
+
+  if (!rows || rows.length < 2) {
+    weightChartEmpty.style.display = 'flex';
+    return;
+  }
+
+  weightChartEmpty.style.display = 'none';
+
+  const width = Math.max(weightChart.clientWidth || 320, 320);
+  const height = 240;
+  const pad = { top: 18, right: 18, bottom: 44, left: 46 };
+  const weights = rows.map(row => Number(row.weightKg));
+  let min = Math.min(...weights);
+  let max = Math.max(...weights);
+
+  if (min === max) {
+    min -= 1;
+    max += 1;
+  }
+
+  const padding = Math.max((max - min) * 0.15, 0.4);
+  min -= padding;
+  max += padding;
+
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+
+  const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+  const y = (weight) => pad.top + ((max - weight) / (max - min)) * plotH;
+
+  const points = rows.map((row, index) => [x(index), y(Number(row.weightKg))]);
+  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point[0].toFixed(1)} ${point[1].toFixed(1)}`).join(' ');
+  const firstPoint = points[0];
+  const lastPoint = points[points.length - 1];
+  const gridValues = [max, (max + min) / 2, min];
+
+  const circles = rows.map((row, index) => {
+    const [cx, cy] = points[index];
+    const date = shortDate(row.dateKey);
+    return `
+      <g>
+        <circle class="chart-point" cx="${cx}" cy="${cy}" r="5"></circle>
+        <title>${date}: ${formatKg(row.weightKg)}</title>
+      </g>
+    `;
+  }).join('');
+
+  const grid = gridValues.map(value => {
+    const gy = y(value);
+    return `
+      <line class="chart-grid" x1="${pad.left}" y1="${gy}" x2="${width - pad.right}" y2="${gy}"></line>
+      <text class="chart-label" x="${pad.left - 8}" y="${gy + 4}" text-anchor="end">${value.toFixed(1)}</text>
+    `;
+  }).join('');
+
+  const xLabels = rows.map((row, index) => {
+    if (rows.length > 6 && index % 2 !== 0 && index !== rows.length - 1) return '';
+    return `<text class="chart-label" x="${x(index)}" y="${height - 16}" text-anchor="middle">${shortDate(row.dateKey)}</text>`;
+  }).join('');
+
+  weightChart.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfica de peso corporal en kg">
+      ${grid}
+      <path class="chart-area" d="${path} L ${lastPoint[0].toFixed(1)} ${height - pad.bottom} L ${firstPoint[0].toFixed(1)} ${height - pad.bottom} Z"></path>
+      <path class="chart-line" d="${path}"></path>
+      ${circles}
+      ${xLabels}
+    </svg>
+  `;
+}
+
+function renderWeightHistory(rows) {
+  weightHistoryList.innerHTML = '';
+
+  if (!rows.length) {
+    weightHistoryList.innerHTML = '<div class="mini-item"><span>Aún no hay pesos corporales guardados.</span></div>';
+    return;
+  }
+
+  rows.slice().reverse().slice(0, 8).forEach((row) => {
+    const item = document.createElement('div');
+    item.className = 'mini-item';
+    const changeText = row.changeKg === '' ? 'Primer registro' : formatChange(row.changeKg);
+    item.innerHTML = `
+      <strong>${escapeHtml(row.dateKey)} · ${formatKg(row.weightKg)}</strong>
+      <span>${escapeHtml(row.status || 'Inicial')} · ${changeText}${row.notes ? ' · ' + escapeHtml(row.notes) : ''}</span>
+    `;
+    weightHistoryList.appendChild(item);
+  });
+}
+
+async function saveBodyWeight() {
+  const dateKey = bodyWeightDate.value;
+  const weightKg = bodyWeightInput.value;
+  const notes = bodyWeightNotes.value.trim();
+
+  if (!dateKey) {
+    showToast('Selecciona una fecha.');
+    return;
+  }
+
+  if (!weightKg || Number(weightKg) < 30 || Number(weightKg) > 250) {
+    showToast('Ingresa un peso válido en kg. Ejemplo: 75.7');
+    return;
+  }
+
+  try {
+    setWeightLoading(true);
+    appData = await jsonpRequest('saveBodyWeight', {
+      payload: JSON.stringify({
+        dateKey,
+        weightKg,
+        notes,
+        dayName: appData ? appData.selectedDay : ''
+      })
+    });
+    bodyWeightInput.value = '';
+    bodyWeightNotes.value = '';
+    closeWeightModal();
+    showToast('Peso corporal guardado en kg.');
+    renderAll();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    setWeightLoading(false);
   }
 }
 
@@ -142,7 +353,7 @@ function renderRoutine() {
 
   routineTitle.textContent = `${appData.selectedDay} · Rutina`;
   routineDescription.textContent = appData.canEdit
-    ? 'Marca lo que termines. También registra peso, reps reales y notas.'
+    ? 'Marca lo que termines. También registra peso usado en kg, reps reales y notas.'
     : 'Puedes ver esta rutina. Para guardar fuera del día, activa reposición.';
 
   makeupBox.style.display = appData.canEdit ? 'none' : 'flex';
@@ -169,8 +380,8 @@ function renderRoutine() {
         </div>
       </div>
       <div class="exercise-fields">
-        <label>Peso usado
-          <input class="weight-input" type="text" maxlength="20" placeholder="Ej: 40 lb" value="${escapeAttr(exercise.weight)}" ${canEdit ? '' : 'disabled'} />
+        <label>Peso usado (kg)
+          <input class="weight-input" type="number" step="0.5" min="0" maxlength="20" placeholder="Ej: 40 kg" value="${escapeAttr(exercise.weight)}" ${canEdit ? '' : 'disabled'} />
         </label>
         <label>Reps reales
           <input class="reps-input" type="text" maxlength="20" placeholder="Ej: 12/10/8" value="${escapeAttr(exercise.reps)}" ${canEdit ? '' : 'disabled'} />
@@ -300,6 +511,35 @@ function renderWeakPoints() {
   });
 }
 
+function formatKg(value) {
+  if (value === '' || value === null || value === undefined) return '-- kg';
+  const num = Number(value);
+  if (!isFinite(num)) return '-- kg';
+  return num.toFixed(1) + ' kg';
+}
+
+function formatChange(value) {
+  if (value === '' || value === null || value === undefined) return '-- kg';
+  const num = Number(value);
+  if (!isFinite(num)) return '-- kg';
+  const sign = num > 0 ? '+' : '';
+  return sign + num.toFixed(1) + ' kg';
+}
+
+function trendClass(status) {
+  const text = String(status).toLowerCase();
+  if (text.includes('baj')) return 'down';
+  if (text.includes('sub')) return 'up';
+  if (text.includes('igual')) return 'same';
+  return '';
+}
+
+function shortDate(dateKey) {
+  const parts = String(dateKey || '').split('-');
+  if (parts.length !== 3) return dateKey;
+  return `${parts[2]}/${parts[1]}`;
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -316,5 +556,34 @@ function escapeAttr(value) {
 allowMakeup.addEventListener('change', renderRoutine);
 saveBtn.addEventListener('click', saveProgress);
 resetBtn.addEventListener('click', resetProgress);
+saveWeightBtn.addEventListener('click', saveBodyWeight);
+
+if (openWeightModalBtn) {
+  openWeightModalBtn.addEventListener('click', openWeightModal);
+}
+
+if (closeWeightModalBtn) {
+  closeWeightModalBtn.addEventListener('click', closeWeightModal);
+}
+
+if (cancelWeightModalBtn) {
+  cancelWeightModalBtn.addEventListener('click', closeWeightModal);
+}
+
+if (weightModal) {
+  weightModal.addEventListener('click', (event) => {
+    if (event.target && event.target.dataset.closeModal === 'true') {
+      closeWeightModal();
+    }
+  });
+}
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeWeightModal();
+});
+
+window.addEventListener('resize', () => {
+  if (appData && appData.bodyWeight) renderWeightChart(appData.bodyWeight.chart || []);
+});
 
 loadData();
