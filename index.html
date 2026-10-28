@@ -1,194 +1,177 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seguimiento de Rutinas</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>GymTrack · Entrenamiento y progreso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
 </head>
 <body>
-  <header class="hero">
-    <div>
-      <p class="eyebrow">Gimnasio Impulso · San Cristóbal</p>
-      <h1>Seguimiento de Rutinas</h1>
-      <p>Bajar grasa, ganar músculo y saber en qué ejercicios estás fallando.</p>
-    </div>
-  </header>
+  <div id="setupNotice" class="setup-notice hidden" role="status"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <main class="container">
-    <section class="status-card">
-      <div>
-        <span id="todayBadge" class="badge">Cargando...</span>
-        <h2 id="todayTitle">Validando día...</h2>
-        <p id="todayMessage">Conectando con Google Sheets.</p>
+  <main id="authScreen" class="auth-shell">
+    <section class="auth-visual">
+      <div class="brand-mark"><span class="brand-icon">G</span><span>GYMTRACK</span></div>
+      <div class="auth-copy">
+        <p class="eyebrow">TU PROGRESO, CON DATOS REALES</p>
+        <h1>Entrena con<br><em>intención.</em></h1>
+        <p>Rutinas asignadas, sesiones verificadas en el gimnasio y evolución corporal en un solo lugar.</p>
       </div>
-      <div class="stats-grid">
-        <div class="stat">
-          <small>Peso actual</small>
-          <strong id="currentWeightStat">Sin registro</strong>
-        </div>
-        <div class="stat">
-          <small>Objetivo</small>
-          <strong>Bajar grasa + músculo</strong>
-        </div>
+      <div class="auth-mini-stats">
+        <div><strong>01</strong><span>Rutina personalizada</span></div>
+        <div><strong>02</strong><span>Registro de progreso</span></div>
+        <div><strong>03</strong><span>Validación de llegada</span></div>
       </div>
+      <div class="auth-glow"></div>
     </section>
-
-    <section class="weight-card">
-      <div class="weight-header">
-        <div>
-          <h2>Control de peso corporal</h2>
-          <p>Consulta tu peso en kg y mira si vas subiendo, bajando o te mantienes igual. El registro se abre desde el botón inferior.</p>
-        </div>
-        <div class="weight-status" id="weightTrendBadge">Sin datos</div>
+    <section class="auth-panel">
+      <div class="auth-card">
+        <div class="brand-mark mobile-brand"><span class="brand-icon">G</span><span>GYMTRACK</span></div>
+        <p class="eyebrow">BIENVENIDO DE NUEVO</p>
+        <h2>Iniciar sesión</h2>
+        <p class="muted">Ingresa con la cuenta que te proporcionó el administrador.</p>
+        <form id="loginForm" class="stack-form">
+          <label>Correo electrónico<input id="loginEmail" type="email" autocomplete="username" required placeholder="tu@correo.com"></label>
+          <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="Tu contraseña"></label>
+          <button id="loginBtn" class="btn btn-primary btn-full" type="submit">Entrar <span>→</span></button>
+        </form>
+        <p class="auth-footnote"><span class="lock-dot"></span> Acceso privado por cuenta. No hay registro público.</p>
+        <p id="authMessage" class="inline-message" aria-live="polite"></p>
       </div>
-
-      <div class="weight-kpis">
-        <div class="stat">
-          <small>Último peso</small>
-          <strong id="latestWeight">-- kg</strong>
-        </div>
-        <div class="stat">
-          <small>Cambio anterior</small>
-          <strong id="lastWeightChange">-- kg</strong>
-        </div>
-        <div class="stat">
-          <small>Cambio total</small>
-          <strong id="totalWeightChange">-- kg</strong>
-        </div>
-      </div>
-
-      <div class="chart-wrap">
-        <div id="weightChart" class="weight-chart"></div>
-        <div id="weightChartEmpty" class="chart-empty">Agrega al menos 2 registros para ver la gráfica.</div>
-      </div>
-
-      <div class="weight-history-title">
-        <h3>Últimos registros</h3>
-        <span>Todo se guarda en la hoja “Pesos”.</span>
-      </div>
-      <div id="weightHistoryList" class="mini-list"></div>
-    </section>
-
-    <section class="days-card">
-      <h3>Días de entrenamiento</h3>
-      <div id="dayTabs" class="day-tabs"></div>
-    </section>
-
-    <section class="routine-card">
-      <div class="routine-header">
-        <div>
-          <h2 id="routineTitle">Rutina</h2>
-          <p id="routineDescription">Selecciona un día.</p>
-        </div>
-        <div class="progress-box">
-          <div class="progress-label">
-            <span>Progreso</span>
-            <strong id="progressText">0%</strong>
-          </div>
-          <div class="progress-bar">
-            <div id="progressFill"></div>
-          </div>
-        </div>
-      </div>
-
-      <label id="makeupBox" class="makeup-box">
-        <input type="checkbox" id="allowMakeup" />
-        <span>Registrar como reposición / rutina fuera de día</span>
-      </label>
-
-      <div id="warningBox" class="warning-box"></div>
-
-      <div id="exerciseList" class="exercise-list"></div>
-
-      <div class="form-grid">
-        <label>
-          Razón principal si no terminé
-          <select id="failReason">
-            <option value="">Seleccionar...</option>
-            <option>Falta de tiempo</option>
-            <option>Gym muy lleno</option>
-            <option>Cansancio</option>
-            <option>Dolor o molestia</option>
-            <option>Falta de energía</option>
-            <option>No sabía usar la máquina</option>
-            <option>Otro</option>
-          </select>
-        </label>
-
-        <label>
-          Notas generales
-          <textarea id="generalNotes" maxlength="200" placeholder="Ejemplo: me faltó tiempo, subí peso, hoy me sentí cansado..."></textarea>
-        </label>
-      </div>
-
-      <div class="actions">
-        <button id="saveBtn" class="btn primary">Guardar avance</button>
-        <button id="resetBtn" class="btn secondary">Reiniciar día</button>
-      </div>
-    </section>
-
-    <section class="dashboard-grid">
-      <article class="dashboard-card">
-        <h3>Últimas sesiones</h3>
-        <div id="historyList" class="mini-list"></div>
-      </article>
-
-      <article class="dashboard-card">
-        <h3>Ejercicios que más fallas</h3>
-        <div id="weakList" class="mini-list"></div>
-      </article>
-    </section>
-
-    <section class="bottom-weight-action">
-      <div>
-        <h3>¿Quieres registrar tu peso de hoy?</h3>
-        <p>Guárdalo en kg para actualizar tu gráfica y comparar si subiste, bajaste o te mantuviste igual.</p>
-      </div>
-      <button id="openWeightModalBtn" class="btn primary">Registrar peso corporal</button>
     </section>
   </main>
 
-  <footer class="footer">
-    <p>Seguimiento personal de rutinas · Google Sheets + Apps Script + Netlify</p>
-  </footer>
+  <div id="appScreen" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand-mark sidebar-brand"><span class="brand-icon">G</span><span>GYMTRACK</span></div>
+      <div class="workspace-label">ESPACIO PERSONAL</div>
+      <nav id="appNav" class="side-nav" aria-label="Navegación principal">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">▦</span>Resumen</button>
+        <button class="nav-item" data-view="routine"><span class="nav-icon">↗</span>Mi rutina</button>
+        <button class="nav-item" data-view="body"><span class="nav-icon">◉</span>Control corporal</button>
+        <button class="nav-item" data-view="evolt"><span class="nav-icon">✳</span>EVOLT 360</button>
+        <button id="adminNavBtn" class="nav-item hidden" data-view="admin"><span class="nav-icon">⚙</span>Administración</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-gym"><span class="status-dot"></span><div><strong>GymTrack</strong><small>Entrenamiento y evolución</small></div></div>
+        <button id="logoutBtn" class="logout-btn">↪ Cerrar sesión</button>
+      </div>
+    </aside>
 
-  <div id="weightModal" class="modal" aria-hidden="true">
-    <div class="modal-backdrop" data-close-modal="true"></div>
-    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="weightModalTitle">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow modal-eyebrow">Registro corporal</p>
-          <h2 id="weightModalTitle">Registrar peso en kg</h2>
-          <p>Lo ideal es pesarte en condiciones parecidas: por ejemplo, en ayunas o antes de entrenar.</p>
+    <main class="main-content">
+      <header class="topbar">
+        <div><p class="eyebrow" id="topEyebrow">TU ESPACIO</p><h1 id="pageTitle">Resumen</h1></div>
+        <div class="profile-chip"><div class="avatar" id="avatarInitials">GT</div><div><strong id="profileName">Usuario</strong><small id="profileEmail">correo@ejemplo.com</small></div><span id="roleBadge" class="role-badge">Usuario</span></div>
+      </header>
+
+      <section id="view-dashboard" class="view-section">
+        <div class="welcome-row"><div><p class="eyebrow">TU CONSTANCIA CONSTRUYE RESULTADOS</p><h2 id="welcomeTitle">Vamos paso a paso.</h2><p class="muted" id="welcomeSubtitle">Registra tus entrenamientos y observa la tendencia, no un solo día.</p></div><div class="date-pill" id="todayDateLabel">Hoy</div></div>
+        <div class="metric-grid">
+          <article class="metric-card"><div class="metric-top"><span>Peso actual</span><span class="metric-icon">↕</span></div><strong id="dashWeight">—</strong><small>kg · último registro</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Cintura</span><span class="metric-icon">⌁</span></div><strong id="dashWaist">—</strong><small>cm · última medición</small></article>
+          <article class="metric-card"><div class="metric-top"><span>Grasa corporal</span><span class="metric-icon">◌</span></div><strong id="dashFat">—</strong><small>última evaluación EVOLT</small></article>
+          <article class="metric-card accent-card"><div class="metric-top"><span>Sesiones este mes</span><span class="metric-icon">✓</span></div><strong id="dashSessions">0</strong><small>sesiones finalizadas</small></article>
         </div>
-        <button id="closeWeightModalBtn" class="modal-close" type="button" aria-label="Cerrar formulario">×</button>
-      </div>
+        <div class="dashboard-columns">
+          <article class="panel chart-panel"><div class="panel-heading"><div><p class="eyebrow">TENDENCIA</p><h3>Evolución del peso</h3></div><span class="small-tag">kg</span></div><div id="weightChart" class="chart-slot"></div><div id="weightChartEmpty" class="empty-chart">Registra dos o más pesos para ver la tendencia.</div></article>
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">ACTIVIDAD</p><h3>Sesiones recientes</h3></div><button class="text-button" data-go-view="routine">Ver rutina →</button></div><div id="recentSessions" class="session-list"><p class="muted">Todavía no hay sesiones.</p></div></article>
+        </div>
+        <article class="panel weak-panel"><div class="panel-heading"><div><p class="eyebrow">OPORTUNIDADES DE MEJORA</p><h3>Ejercicios que más quedan pendientes</h3><p class="muted">Se calculan con los registros que has guardado; no es una calificación de tu rendimiento.</p></div><button class="text-button" data-go-view="routine">Revisar rutina →</button></div><div id="weakPoints" class="weak-list"><p class="muted">Todavía no hay suficientes registros.</p></div></article>
+        <div class="tip-strip"><span class="tip-icon">✦</span><div><strong>Enfócate en la tendencia.</strong><p>El peso puede fluctuar por agua, comida y descanso. Compara registros hechos en condiciones similares.</p></div></div>
+      </section>
 
-      <div class="modal-form">
-        <label>
-          Fecha
-          <input id="bodyWeightDate" type="date" />
-        </label>
-        <label>
-          Peso corporal en kg
-          <input id="bodyWeightInput" type="number" step="0.1" min="30" max="250" placeholder="Ej: 75.7" />
-        </label>
-        <label>
-          Nota opcional
-          <input id="bodyWeightNotes" type="text" maxlength="100" placeholder="Ej: en ayunas, después de entrenar..." />
-        </label>
-      </div>
+      <section id="view-routine" class="view-section hidden">
+        <div class="section-intro"><div><p class="eyebrow">ENTRENAMIENTO</p><h2>Tu rutina asignada</h2><p class="muted">Los ejercicios se habilitan después de validar tu llegada al gimnasio.</p></div><div class="date-pill" id="routineDateBadge">Hoy</div></div>
+        <article class="panel checkin-panel"><div class="checkin-copy"><div class="checkin-icon">⌖</div><div><h3 id="gymNameLabel">Impulso Fitness · San Cristóbal</h3><p id="gymStatusText">La ubicación del gimnasio debe configurarse desde Administración.</p><div id="sessionStatus" class="session-status">Sesión no iniciada</div></div></div><label id="checkInGymPickerWrap" class="gym-select-wrap hidden">Sede autorizada<select id="checkInGymSelect"></select></label><button id="checkInBtn" class="btn btn-primary" type="button">Confirmar llegada <span>→</span></button></article>
+        <div class="routine-toolbar"><div><label for="routineDaySelect">Día de rutina</label><select id="routineDaySelect"></select></div><div class="routine-progress"><div class="progress-label"><span>Ejercicios completados</span><strong id="routineProgressText">0%</strong></div><div class="progress-track"><span id="routineProgressFill"></span></div></div></div>
+        <div id="routineNotice" class="notice-box">Confirma tu llegada para habilitar los campos de registro.</div>
+        <div id="exerciseList" class="exercise-list"><div class="empty-state">Cargando rutina...</div></div>
+        <div class="routine-footer"><label class="grow-field">Notas de la sesión<textarea id="sessionNotes" rows="2" maxlength="500" placeholder="Energía, tiempo disponible, molestias o comentarios..."></textarea></label><div class="routine-actions"><button id="saveWorkoutBtn" class="btn btn-secondary" type="button" disabled>Guardar avance</button><button id="finishWorkoutBtn" class="btn btn-primary" type="button" disabled>Finalizar sesión</button></div></div>
+        <p class="privacy-note">La validación usa ubicación del navegador. La precisión depende del dispositivo y no elimina por completo la posibilidad de falsificar GPS.</p>
+      </section>
 
-      <div class="modal-actions">
-        <button id="saveWeightBtn" class="btn primary">Guardar peso</button>
-        <button id="cancelWeightModalBtn" class="btn secondary" type="button">Cancelar</button>
-      </div>
-    </section>
+      <section id="view-body" class="view-section hidden">
+        <div class="section-intro"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Control corporal</h2><p class="muted">Registra peso y medidas en condiciones similares para comparar cambios reales.</p></div></div>
+        <div class="body-layout">
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">REGISTRO RÁPIDO</p><h3>Peso corporal</h3></div><span class="small-tag">kg</span></div><form id="weightForm" class="stack-form compact-form"><label>Fecha<input id="weightDate" type="date" required></label><label>Peso corporal (kg)<input id="weightKg" type="number" step="0.1" min="30" max="250" placeholder="77.7" required></label><label>Notas opcionales<input id="weightNotes" type="text" maxlength="300" placeholder="En ayunas, antes de entrenar..."></label><button class="btn btn-primary" type="submit">Guardar peso</button></form></article>
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">ÚLTIMAS MEDICIONES</p><h3>Historial de peso</h3></div><span class="small-tag">kg</span></div><div id="weightHistory" class="history-list"><p class="muted">Sin registros.</p></div></article>
+        </div>
+        <article class="panel measurement-panel"><div class="panel-heading"><div><p class="eyebrow">MEDIDAS EN CENTÍMETROS</p><h3>Nueva evaluación corporal</h3><p class="muted">Los campos son opcionales; guarda solo las medidas que hayas tomado.</p></div><span class="small-tag">cm / kg</span></div>
+          <form id="measurementsForm">
+            <div class="form-grid two-col"><label>Fecha de evaluación<input id="measureDate" type="date" required></label><label>Notas<textarea id="measureNotes" rows="1" maxlength="600" placeholder="Ej. evaluación mensual"></textarea></label></div>
+            <div class="measure-grid">
+              <label>Estatura (cm)<input id="m-heightCm" type="number" step="0.1" placeholder="171"></label>
+              <label>Peso (kg)<input id="m-weightKg" type="number" step="0.1" placeholder="77.7"></label>
+              <label>Cuello (cm)<input id="m-neckCm" type="number" step="0.1"></label>
+              <label>Hombros (cm)<input id="m-shouldersCm" type="number" step="0.1"></label>
+              <label>Pecho (cm)<input id="m-chestCm" type="number" step="0.1"></label>
+              <label>Bajo pecho (cm)<input id="m-underbustCm" type="number" step="0.1"></label>
+              <label>Cintura (cm)<input id="m-waistCm" type="number" step="0.1" placeholder="89.9"></label>
+              <label>Abdomen bajo (cm)<input id="m-abdomenCm" type="number" step="0.1"></label>
+              <label>Cadera / glúteos (cm)<input id="m-hipsCm" type="number" step="0.1"></label>
+              <label>Brazo (cm)<input id="m-armCm" type="number" step="0.1"></label>
+              <label>Antebrazo (cm)<input id="m-forearmCm" type="number" step="0.1"></label>
+              <label>Muñeca (cm)<input id="m-wristCm" type="number" step="0.1"></label>
+              <label>Muslo (cm)<input id="m-thighCm" type="number" step="0.1"></label>
+              <label>Rodilla (cm)<input id="m-kneeCm" type="number" step="0.1"></label>
+              <label>Pantorrilla (cm)<input id="m-calfCm" type="number" step="0.1"></label>
+              <label>Tobillo (cm)<input id="m-ankleCm" type="number" step="0.1"></label>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar evaluación</button><label class="btn btn-secondary file-button" for="importBodytrackInput">Importar respaldo BodyTrack JSON</label><input id="importBodytrackInput" type="file" accept="application/json,.json" hidden><button id="exportMeasuresCsvBtn" class="btn btn-secondary" type="button">Exportar medidas CSV</button><button id="exportMyDataBtn" class="btn btn-secondary" type="button">Descargar mis datos JSON</button></div>
+          </form>
+        </article>
+        <div class="dashboard-columns body-history-columns"><article class="panel"><div class="panel-heading"><div><p class="eyebrow">HISTORIAL</p><h3>Evaluaciones corporales</h3></div></div><div id="measureHistory" class="table-wrap"><p class="muted">Sin evaluaciones.</p></div></article><article class="panel"><div class="panel-heading"><div><p class="eyebrow">TENDENCIA</p><h3>Evolución de medidas</h3></div></div><label class="chart-select-label">Variable<select id="measureChartSelect"><option value="waistCm">Cintura (cm)</option><option value="weightKg">Peso (kg)</option><option value="hipsCm">Cadera (cm)</option><option value="chestCm">Pecho (cm)</option><option value="thighCm">Muslo (cm)</option><option value="armCm">Brazo (cm)</option></select></label><div id="measureChart" class="chart-slot"></div></article></div>
+      </section>
+
+      <section id="view-evolt" class="view-section hidden">
+        <div class="section-intro"><div><p class="eyebrow">COMPOSICIÓN CORPORAL</p><h2>Evaluación EVOLT 360</h2><p class="muted">Guarda cada evaluación para comparar masa muscular, grasa y otros indicadores a lo largo del tiempo.</p></div></div>
+        <div class="evolt-highlight"><div><span class="eyebrow">ÚLTIMA EVALUACIÓN</span><strong id="evoltLatestDate">Sin registros</strong></div><div class="evolt-highlight-metric"><small>Grasa corporal</small><strong id="evoltLatestFat">—</strong></div><div class="evolt-highlight-metric"><small>Masa muscular esquelética</small><strong id="evoltLatestMuscle">—</strong></div></div>
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">DATOS DEL REPORTE</p><h3>Registrar evaluación</h3><p class="muted">El formulario está precargado con los datos de referencia compartidos. Confirma la fecha y corrige cualquier cifra antes de guardar.</p></div><span class="small-tag">EVOLT 360</span></div>
+          <form id="evoltForm">
+            <div class="form-grid three-col">
+              <label>Fecha del reporte<input id="e-date" type="date" required></label><label>Edad (años)<input id="e-edad" type="number" min="1" max="110" value="21"></label><label>Estatura (cm)<input id="e-estaturaCm" type="number" step="0.1" value="171"></label>
+              <label>Peso (kg)<input id="e-pesoKg" type="number" step="0.1" value="77.7"></label><label>BWI / 10<input id="e-bwi" type="number" step="0.1" value="7.7"></label><label>Masa muscular esquelética (kg)<input id="e-masaMuscularEsqueleticaKg" type="number" step="0.1" value="33.2"></label>
+              <label>Masa magra total (kg)<input id="e-masaMagraKg" type="number" step="0.1" value="59.8"></label><label>Agua corporal total (L)<input id="e-aguaCorporalL" type="number" step="0.1" value="43.1"></label><label>Metabolismo basal (kcal)<input id="e-bmrKcal" type="number" step="1" value="1661"></label>
+              <label>Gasto energético total (kcal)<input id="e-teeKcal" type="number" step="1" value="2557"></label><label>Grasa corporal (%)<input id="e-grasaPct" type="number" step="0.1" value="23.0"></label><label>Masa grasa (kg)<input id="e-masaGrasaKg" type="number" step="0.1" value="17.9"></label>
+              <label>Grasa subcutánea (kg)<input id="e-grasaSubcutaneaKg" type="number" step="0.1" value="15.5"></label><label>Nivel grasa visceral<input id="e-grasaVisceralNivel" type="number" step="1" value="8"></label><label>Área grasa visceral (cm²)<input id="e-areaGrasaVisceralCm2" type="number" step="0.1" value="71"></label>
+              <label>Cintura (cm)<input id="e-cinturaCm" type="number" step="0.1" value="89.9"></label><label>Relación cintura/cadera<input id="e-ratioCinturaCadera" type="number" step="0.01" value="0.85"></label><label class="span-all">Notas<textarea id="e-notes" rows="2" maxlength="600" placeholder="Observaciones del reporte..."></textarea></label>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar EVOLT 360</button><button id="resetEvoltFormBtn" class="btn btn-secondary" type="button">Restablecer valores de referencia</button></div>
+          </form>
+        </article>
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">HISTORIAL</p><h3>Evaluaciones guardadas</h3></div></div><div id="evoltHistory" class="table-wrap"><p class="muted">Sin evaluaciones.</p></div></article>
+        <p class="privacy-note">Los resultados EVOLT son mediciones de seguimiento; interpreta las tendencias en condiciones similares y consulta a un profesional para decisiones clínicas o nutricionales.</p>
+      </section>
+
+      <section id="view-admin" class="view-section hidden">
+        <div class="section-intro"><div><p class="eyebrow">CONTROL DE ACCESO</p><h2>Administración</h2><p class="muted">Crea usuarios, asigna rutinas y configura la zona de validación.</p></div><button id="refreshAdminBtn" class="btn btn-secondary" type="button">Actualizar datos</button></div>
+        <div class="admin-grid">
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">CUENTAS</p><h3>Crear usuario</h3></div></div><form id="createUserForm" class="stack-form compact-form"><label>Nombre<input id="newUserName" maxlength="100" required placeholder="Nombre del usuario"></label><label>Correo<input id="newUserEmail" type="email" required placeholder="usuario@correo.com"></label><label>Contraseña inicial<input id="newUserPassword" type="password" minlength="8" required placeholder="Mínimo 8 caracteres"></label><label>Rol<select id="newUserRole"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></label><button class="btn btn-primary" type="submit">Crear cuenta</button></form></article>
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">USUARIOS REGISTRADOS</p><h3>Accesos</h3></div><span class="small-tag" id="userCount">0</span></div><div id="adminUsers" class="admin-user-list"><p class="muted">Cargando usuarios...</p></div></article>
+        </div>
+        <article class="panel"><div class="panel-heading"><div><p class="eyebrow">PLANIFICACIÓN</p><h3>Asignar ejercicios</h3><p class="muted">Puedes aplicar la rutina base de cuatro días o añadir ejercicios puntuales.</p></div></div>
+          <div class="form-grid two-col"><label>Usuario destino<select id="assignUserSelect"></select></label><div class="assign-template-wrap"><button id="assignTemplateBtn" class="btn btn-secondary" type="button">Asignar rutina base (Lun/Mié/Vie/Sáb)</button><small>Reemplaza asignaciones activas de ese usuario; no borra el historial.</small></div></div>
+          <form id="assignExerciseForm" class="assign-form"><label>Día<select id="assignDay"><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option></select></label><label>Ejercicio del catálogo<select id="assignExercise"></select></label><label class="grow-field">Detalle / series<input id="assignDetail" maxlength="250" placeholder="Ej. 3 series x 8-12 repeticiones"></label><button class="btn btn-primary" type="submit">Añadir ejercicio</button></form>
+          <div id="adminAssignments" class="table-wrap admin-assignment-table"><p class="muted">Selecciona un usuario.</p></div>
+          <div class="catalog-create-wrap"><div class="panel-heading"><div><p class="eyebrow">CATÁLOGO</p><h3>Crear ejercicio nuevo</h3><p class="muted">El nombre y la descripción aparecerán en las rutinas de los usuarios a quienes se lo asignes.</p></div></div><form id="catalogForm" class="assign-form catalog-form"><label>Nombre del ejercicio<input id="newExerciseName" maxlength="120" required placeholder="Ej. Press de pecho"></label><label>Grupo muscular<input id="newExerciseMuscle" maxlength="80" required placeholder="Pecho, espalda…"></label><label class="span-all">Descripción<textarea id="newExerciseDescription" maxlength="800" rows="3" required placeholder="Explica cómo se realiza, postura, recorrido y recomendaciones."></textarea></label><label>Series / repeticiones<input id="newExerciseDetail" maxlength="250" placeholder="3 series x 8-12 repeticiones"></label><label>Tipo<select id="newExerciseCardio"><option value="No">Fuerza / movilidad</option><option value="Sí">Cardio</option></select></label><button class="btn btn-secondary" type="submit">Guardar ejercicio</button></form></div>
+        </article>
+        <div class="admin-grid">
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">SEDES Y UBICACIONES</p><h3>Agregar gimnasio desde Google Maps</h3><p class="muted">Puedes registrar varias sucursales y decidir a qué usuarios se les permite entrenar en cada una.</p></div></div>
+            <form id="gymCreateForm" class="stack-form compact-form"><label>Nombre del gimnasio / sede<input id="newGymName" maxlength="120" required placeholder="Ej. Impulso Fitness · San Cristóbal"></label><label>Dirección o referencia<input id="newGymAddress" maxlength="240" placeholder="Centro comercial, zona, ciudad"></label><label>Enlace de Google Maps<input id="newGymMapsUrl" type="url" maxlength="1000" placeholder="Pega aquí el enlace compartido de Google Maps"></label><div class="form-actions"><button id="parseMapsBtn" class="btn btn-secondary" type="button">Extraer coordenadas del enlace</button><button id="openMapsBtn" class="btn btn-secondary" type="button">Abrir Google Maps</button></div><div class="form-grid two-col"><label>Latitud<input id="newGymLat" type="number" step="any" required placeholder="Ej. 14.5"></label><label>Longitud<input id="newGymLng" type="number" step="any" required placeholder="Ej. -90.6"></label></div><div class="form-grid two-col"><label>Radio permitido (m)<input id="newGymRadius" type="number" min="30" max="1000" value="150" required></label><label>Precisión GPS máxima (m)<input id="newGymAccuracy" type="number" min="10" max="300" value="80" required></label></div><button id="useCurrentGymLocationBtn" class="btn btn-secondary" type="button">⌖ Usar mi ubicación actual como coordenadas</button><p id="gymMapsHelp" class="small-text muted">Pega un enlace de Google Maps con coordenadas, o abre Google Maps y haz clic derecho sobre el punto exacto para copiar latitud y longitud.</p><button class="btn btn-primary" type="submit">Guardar nueva sede</button></form>
+            <div class="panel-heading sub-panel-heading"><div><p class="eyebrow">SEDES REGISTRADAS</p><h3>Gimnasios disponibles</h3></div></div><div id="adminGymList" class="admin-gym-list"><p class="muted">Cargando sedes…</p></div>
+          </article>
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">PERMISOS DE UBICACIÓN</p><h3>Gimnasios autorizados por usuario</h3><p class="muted">Selecciona el usuario en “Asignar ejercicios” y marca todas las sedes donde puede confirmar llegada.</p></div></div><div id="adminUserGymAssignments" class="admin-gym-checkboxes"><p class="muted">Selecciona un usuario.</p></div><button id="saveUserGymsBtn" class="btn btn-primary btn-full" type="button">Guardar gimnasios permitidos</button><p id="userGymStatus" class="small-text muted">Los usuarios solo podrán iniciar una sesión en las sedes activas que tengan asignadas.</p><div class="divider-line"></div><div class="panel-heading"><div><p class="eyebrow">MIGRACIÓN</p><h3>Historial anterior</h3><p class="muted">Importa registros de las hojas antiguas “Pesos”, “Registro” y “Sesiones” a un usuario. Las hojas antiguas no se borran.</p></div></div><label>Usuario destino<select id="migrateUserSelect"></select></label><button id="migrateLegacyBtn" class="btn btn-secondary btn-full" type="button">Importar historial del tracker anterior</button><p class="small-text muted">Usa esta opción una sola vez por usuario para evitar duplicados. Los registros históricos no activan sesiones.</p></article>
+        </div>
+      </section>
+      <footer class="app-footer"><span>GYMTRACK · Google Sheets + Apps Script + Firebase</span><span>Los datos de cada usuario se mantienen separados.</span></footer>
+    </main>
   </div>
-
-  <div id="toast" class="toast"></div>
-
-  <script src="app.js"></script>
 </body>
 </html>
