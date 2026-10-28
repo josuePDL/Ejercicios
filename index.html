@@ -9,6 +9,158 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Ajustes responsivos para evitar que el nombre del ejercicio se desplace */
+    #exerciseList {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    #exerciseList .exercise-card {
+      display: block !important;
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      padding: 17px 19px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    #exerciseList .exercise-head {
+      display: grid !important;
+      grid-template-columns: 22px minmax(0, 1fr) !important;
+      justify-content: start !important;
+      align-items: start;
+      gap: 12px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    #exerciseList .exercise-check {
+      grid-column: 1;
+      justify-self: start;
+      width: 20px;
+      height: 20px;
+      margin: 2px 0 0;
+    }
+
+    #exerciseList .exercise-title-wrap {
+      grid-column: 2;
+      display: block !important;
+      flex: initial !important;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      margin: 0;
+    }
+
+    #exerciseList .exercise-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start !important;
+      flex-wrap: wrap;
+      gap: 7px 9px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    #exerciseList .exercise-title-row h3 {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    #exerciseList .exercise-detail,
+    #exerciseList .exercise-description {
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+    #exerciseList .set-grid {
+      display: grid;
+      grid-template-columns: 54px repeat(2, minmax(0, 150px));
+      align-items: center;
+      gap: 7px;
+      width: calc(100% - 34px);
+      max-width: 430px;
+      min-width: 0;
+      margin: 14px 0 0 34px;
+    }
+
+    #exerciseList .set-grid > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    #exerciseList .set-grid input,
+    #exerciseList .exercise-notes input {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    #exerciseList .exercise-notes {
+      width: calc(100% - 34px);
+      max-width: 396px;
+      min-width: 0;
+      margin: 12px 0 0 34px;
+    }
+
+    @media (max-width: 768px) {
+      #exerciseList .exercise-card {
+        padding: 14px;
+      }
+
+      #exerciseList .exercise-head {
+        grid-template-columns: 21px minmax(0, 1fr) !important;
+        gap: 9px;
+      }
+
+      #exerciseList .set-grid {
+        grid-template-columns: 54px repeat(2, minmax(0, 1fr));
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        gap: 6px;
+      }
+
+      #exerciseList .exercise-notes {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 380px) {
+      #exerciseList .exercise-title-row {
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      #exerciseList .set-grid {
+        grid-template-columns: 48px repeat(2, minmax(0, 1fr));
+        gap: 5px;
+      }
+
+      #exerciseList .set-grid input {
+        padding: 8px 5px;
+        font-size: 12px;
+      }
+    }
+  </style>
   <script src="firebase-config.js"></script>
   <script type="module" src="app.js"></script>
 </head>
@@ -92,6 +244,13 @@
         <article class="panel checkin-panel"><div class="checkin-copy"><div class="checkin-icon">⌖</div><div><h3 id="gymNameLabel">Impulso Fitness · San Cristóbal</h3><p id="gymStatusText">La ubicación del gimnasio debe configurarse desde Administración.</p><div id="sessionStatus" class="session-status">Sesión no iniciada</div></div></div><label id="checkInGymPickerWrap" class="gym-select-wrap hidden">Sede autorizada<select id="checkInGymSelect"></select></label><button id="checkInBtn" class="btn btn-primary" type="button">Confirmar llegada <span>→</span></button></article>
         <div class="routine-toolbar"><div><label for="routineDaySelect">Día de rutina</label><select id="routineDaySelect"></select></div><div class="routine-progress"><div class="progress-label"><span>Ejercicios completados</span><strong id="routineProgressText">0%</strong></div><div class="progress-track"><span id="routineProgressFill"></span></div></div></div>
         <div id="routineNotice" class="notice-box">Confirma tu llegada para habilitar los campos de registro.</div>
+        <div class="exercise-list-heading">
+          <div><p class="eyebrow">LISTA DE TRABAJO</p><h3>Ejercicios del día seleccionado</h3><p class="muted">Registra el peso y las repeticiones de cada serie. Marca el ejercicio cuando termines.</p></div>
+          <div class="exercise-summary-grid" aria-live="polite">
+            <div class="exercise-summary-item"><span>Ejercicios</span><strong id="routineExerciseCount">0</strong></div>
+            <div class="exercise-summary-item"><span>Completados</span><strong id="routineCompletedCount">0</strong></div>
+          </div>
+        </div>
         <div id="exerciseList" class="exercise-list"><div class="empty-state">Cargando rutina...</div></div>
         <div class="routine-footer"><label class="grow-field">Notas de la sesión<textarea id="sessionNotes" rows="2" maxlength="500" placeholder="Energía, tiempo disponible, molestias o comentarios..."></textarea></label><div class="routine-actions"><button id="saveWorkoutBtn" class="btn btn-secondary" type="button" disabled>Guardar avance</button><button id="finishWorkoutBtn" class="btn btn-primary" type="button" disabled>Finalizar sesión</button></div></div>
         <p class="privacy-note">La validación usa ubicación del navegador. La precisión depende del dispositivo y no elimina por completo la posibilidad de falsificar GPS.</p>
@@ -158,9 +317,44 @@
         </div>
         <article class="panel"><div class="panel-heading"><div><p class="eyebrow">PLANIFICACIÓN</p><h3>Asignar ejercicios</h3><p class="muted">Puedes aplicar la rutina base de cuatro días o añadir ejercicios puntuales.</p></div></div>
           <div class="form-grid two-col"><label>Usuario destino<select id="assignUserSelect"></select></label><div class="assign-template-wrap"><button id="assignTemplateBtn" class="btn btn-secondary" type="button">Asignar rutina base (Lun/Mié/Vie/Sáb)</button><small>Reemplaza asignaciones activas de ese usuario; no borra el historial.</small></div></div>
-          <form id="assignExerciseForm" class="assign-form"><label>Día<select id="assignDay"><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option></select></label><label>Ejercicio del catálogo<select id="assignExercise"></select></label><label class="grow-field">Detalle / series<input id="assignDetail" maxlength="250" placeholder="Ej. 3 series x 8-12 repeticiones"></label><button class="btn btn-primary" type="submit">Añadir ejercicio</button></form>
-          <div id="adminAssignments" class="table-wrap admin-assignment-table"><p class="muted">Selecciona un usuario.</p></div>
-          <div class="catalog-create-wrap"><div class="panel-heading"><div><p class="eyebrow">CATÁLOGO</p><h3>Crear ejercicio nuevo</h3><p class="muted">El nombre y la descripción aparecerán en las rutinas de los usuarios a quienes se lo asignes.</p></div></div><form id="catalogForm" class="assign-form catalog-form"><label>Nombre del ejercicio<input id="newExerciseName" maxlength="120" required placeholder="Ej. Press de pecho"></label><label>Grupo muscular<input id="newExerciseMuscle" maxlength="80" required placeholder="Pecho, espalda…"></label><label class="span-all">Descripción<textarea id="newExerciseDescription" maxlength="800" rows="3" required placeholder="Explica cómo se realiza, postura, recorrido y recomendaciones."></textarea></label><label>Series / repeticiones<input id="newExerciseDetail" maxlength="250" placeholder="3 series x 8-12 repeticiones"></label><label>Tipo<select id="newExerciseCardio"><option value="No">Fuerza / movilidad</option><option value="Sí">Cardio</option></select></label><button class="btn btn-secondary" type="submit">Guardar ejercicio</button></form></div>
+          <div id="adminExerciseSummary" class="admin-exercise-summary">
+            <div class="admin-exercise-stat"><span>Ejercicios asignados</span><strong id="assignedExerciseCount">0</strong><small>Para el usuario seleccionado</small></div>
+            <div class="admin-exercise-stat"><span>Días con rutina</span><strong id="assignedDayCount">0/7</strong><small>Distribución semanal</small></div>
+            <div class="admin-exercise-stat"><span>Catálogo disponible</span><strong id="catalogExerciseCount">0</strong><small>Ejercicios reutilizables</small></div>
+          </div>
+          <div class="assignment-builder">
+            <div class="exercise-subheading"><div><p class="eyebrow">PASO 1 · CONFIGURAR</p><h4>Añadir ejercicio a la rutina</h4><p class="muted">Elige el día, revisa la descripción y ajusta las series para esta persona.</p></div></div>
+            <form id="assignExerciseForm" class="assign-form exercise-assignment-form">
+              <label>Día de entrenamiento<select id="assignDay"><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option></select></label>
+              <div class="assign-exercise-field"><label>Ejercicio del catálogo<select id="assignExercise"></select></label><div id="assignExercisePreview" class="exercise-select-preview" aria-live="polite"><span class="preview-empty">Selecciona un ejercicio para ver sus detalles.</span></div></div>
+              <label class="grow-field">Series / repeticiones<input id="assignDetail" maxlength="250" placeholder="Ej. 3 series x 8-12 repeticiones"></label>
+              <button class="btn btn-primary" type="submit">Añadir a la rutina <span>＋</span></button>
+            </form>
+          </div>
+          <div class="assignment-list-panel">
+            <div class="panel-heading assignment-list-heading"><div><p class="eyebrow">PASO 2 · ORGANIZAR</p><h3>Rutina asignada</h3><p class="muted">Revisa el orden, la descripción y las series. Puedes filtrar o quitar ejercicios sin borrar su historial.</p></div><span class="small-tag" id="assignmentCount">0 ejercicios</span></div>
+            <div class="assignment-filters">
+              <label>Buscar ejercicio<input id="assignmentSearch" type="search" placeholder="Nombre, músculo o descripción…"></label>
+              <label>Filtrar por día<select id="assignmentDayFilter"><option value="">Todos los días</option><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option><option>Domingo</option></select></label>
+            </div>
+            <div id="adminAssignments" class="admin-assignment-list"><p class="muted">Selecciona un usuario.</p></div>
+          </div>
+          <div class="catalog-create-wrap">
+            <div class="panel-heading"><div><p class="eyebrow">CATÁLOGO</p><h3>Crear ejercicio nuevo</h3><p class="muted">Guarda una vez cada ejercicio para reutilizarlo en las rutinas de diferentes usuarios.</p></div></div>
+            <form id="catalogForm" class="assign-form catalog-form">
+              <label>Nombre del ejercicio<input id="newExerciseName" maxlength="120" required placeholder="Ej. Press de pecho"></label>
+              <label>Grupo muscular<input id="newExerciseMuscle" maxlength="80" required placeholder="Pecho, espalda…"></label>
+              <label class="span-all">Descripción<textarea id="newExerciseDescription" maxlength="800" rows="3" required placeholder="Explica cómo se realiza, postura, recorrido y recomendaciones."></textarea></label>
+              <label>Series / repeticiones<input id="newExerciseDetail" maxlength="250" placeholder="3 series x 8-12 repeticiones"></label>
+              <label>Tipo<select id="newExerciseCardio"><option value="No">Fuerza / movilidad</option><option value="Sí">Cardio</option></select></label>
+              <button class="btn btn-secondary" type="submit">Guardar ejercicio</button>
+            </form>
+            <div class="catalog-browser">
+              <div class="panel-heading catalog-browser-heading"><div><p class="eyebrow">EJERCICIOS GUARDADOS</p><h4>Explorar catálogo</h4></div><span id="catalogCount" class="small-tag">0 ejercicios</span></div>
+              <label class="catalog-search-label">Buscar en el catálogo<input id="catalogSearch" type="search" placeholder="Ej. espalda, press, cardio…"></label>
+              <div id="adminCatalogList" class="admin-catalog-list"><p class="muted">Cargando catálogo…</p></div>
+            </div>
+          </div>
         </article>
         <div class="admin-grid">
           <article class="panel"><div class="panel-heading"><div><p class="eyebrow">SEDES Y UBICACIONES</p><h3>Agregar gimnasio desde Google Maps</h3><p class="muted">Puedes registrar varias sucursales y decidir a qué usuarios se les permite entrenar en cada una.</p></div></div>
