@@ -1,8 +1,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 
 const CONFIG = window.GYMTRACK_CONFIG || {};
-const API_URL = String(CONFIG.appsScriptUrl || 'https://script.google.com/macros/s/AKfycbypuoiyzvM9huEuMPmox9OZpmOPvPuKK1uBJEI6CRb44fBYpbRyRFumvD6A7Yb3N3L6zQ/exec').trim();
+const API_URL = String(CONFIG.appsScriptUrl || '').trim();
 const FIREBASE_CONFIG = CONFIG.firebase || {};
 const FIREBASE_READY = !!(FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).includes('CONFIGURAR') && FIREBASE_CONFIG.projectId && !String(FIREBASE_CONFIG.projectId).includes('TU-PROYECTO') && FIREBASE_CONFIG.appId && !String(FIREBASE_CONFIG.appId).includes('CONFIGURAR'));
 const API_READY = !!(API_URL.startsWith('https://script.google.com/macros/s/') && API_URL.endsWith('/exec'));
@@ -11,7 +11,10 @@ let currentUser = null;
 let appData = null;
 let adminData = null;
 let selectedRoutineDay = '';
-let currentView = 'dashboard';
+const PAGE_VIEW = { 'index.html':'dashboard', 'control-corporal.html':'body', 'evolt.html':'evolt', 'administracion.html':'admin', 'login.html':'login' };
+const PAGE_FILE = { dashboard:'index.html', routine:'index.html', body:'control-corporal.html', evolt:'evolt.html', admin:'administracion.html' };
+const PAGE_NAME = location.pathname.split('/').pop() || 'index.html';
+let currentView = PAGE_VIEW[PAGE_NAME] || 'dashboard';
 let toastTimer = null;
 
 const $ = id => document.getElementById(id);
@@ -24,6 +27,12 @@ const EVOLT_REFERENCE = { edad:21, estaturaCm:171, pesoKg:77.7, bwi:7.7, masaMus
 if (FIREBASE_READY) {
   try { auth = getAuth(initializeApp(FIREBASE_CONFIG)); }
   catch (error) { console.error(error); }
+}
+
+function goToView(view) {
+  const target = PAGE_FILE[view] || 'index.html';
+  if (target !== PAGE_NAME) { location.href = target; return; }
+  setView(view);
 }
 
 function showSetupNotice() {
@@ -40,17 +49,20 @@ function showSetupNotice() {
 showSetupNotice();
 
 if (auth) {
-  onAuthStateChanged(auth, async user => {
+  setPersistence(auth, browserLocalPersistence).then(() => onAuthStateChanged(auth, async user => {
     currentUser = user;
     if (!user) {
       appData = null;
       $('authScreen').classList.remove('hidden');
       $('appScreen').classList.add('hidden');
+      if (PAGE_NAME !== 'login.html') location.replace('login.html');
       return;
     }
     try {
       setBusy(true, 'Verificando tu cuenta…');
       appData = await api('bootstrap');
+      if (PAGE_NAME === 'login.html') { location.replace('index.html'); return; }
+      if (PAGE_NAME === 'administracion.html' && !['admin','administrador'].includes(appData.profile.rol)) { location.replace('index.html'); return; }
       selectedRoutineDay = appData.todayDay;
       renderAll();
       $('authScreen').classList.add('hidden');
@@ -58,14 +70,14 @@ if (auth) {
       $('authMessage').textContent = '';
       if (appData.profile.rol === 'admin' || appData.profile.rol === 'administrador') $('adminNavBtn').classList.remove('hidden');
       else $('adminNavBtn').classList.add('hidden');
-      setView(currentView);
+      setView(currentView === 'login' ? 'dashboard' : currentView);
     } catch (error) {
       $('authScreen').classList.remove('hidden');
       $('appScreen').classList.add('hidden');
       $('authMessage').textContent = error.message || 'No se pudo verificar el usuario.';
       try { await signOut(auth); } catch (_) {}
     } finally { setBusy(false); }
-  });
+  })).catch(error => { console.error('No se pudo restaurar la sesión Firebase:', error); $('authMessage').textContent = 'No se pudo inicializar la sesión. Revisa la configuración de Firebase.'; });
 }
 
 $('loginForm').addEventListener('submit', async event => {
@@ -89,6 +101,7 @@ $('logoutBtn').addEventListener('click', async () => {
   currentUser = null;
   appData = null;
   currentView = 'dashboard';
+  location.href = 'login.html';
 });
 
 async function api(action, payload = {}) {
@@ -208,8 +221,8 @@ function setView(view) {
   $('topEyebrow').textContent = view === 'admin' ? 'CONTROL DE ACCESO' : 'TU ESPACIO PERSONAL';
   if (view === 'admin') loadAdminData().catch(e => showToast(e.message, 'error'));
 }
-document.querySelectorAll('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
-document.querySelectorAll('[data-go-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.goView)));
+document.querySelectorAll('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => goToView(button.dataset.view)));
+document.querySelectorAll('[data-go-view]').forEach(button => button.addEventListener('click', () => goToView(button.dataset.goView)));
 
 function renderDashboard() {
   const s = appData.summary || {};
@@ -294,6 +307,7 @@ function renderRoutine() {
   } else {
     $('exerciseList').innerHTML = assigned.map((exercise,index) => renderExerciseCard(exercise, todayLogs.get(exercise.id), active)).join('');
   }
+  updateRoutineExerciseSummary();
   const notice = $('routineNotice');
   if (!isToday) { notice.textContent = `Estás consultando ${selectedRoutineDay}. Solo puedes activar la rutina del día actual (${appData.todayDay}).`; notice.className='notice-box'; }
   else if (!gyms.length) { notice.textContent = 'No tienes gimnasios autorizados. Pide al administrador que te asigne una sede.'; notice.className='notice-box error'; }
@@ -320,7 +334,17 @@ function renderExerciseCard(exercise, log, enabled) {
     setMarkup = `<div class="set-grid"><span></span><span class="set-header">PESO (KG)</span><span class="set-header">REPETICIONES</span>${rows}</div>`;
   }
   const notePlaceholder = isCardio ? 'Minutos realizados, ritmo o comentario…' : 'Nota del ejercicio (opcional)…';
-  return `<article class="exercise-card ${checked?'is-done':''}" data-assignment-id="${escapeHtml(exercise.id)}"><div class="exercise-head"><input class="exercise-check" type="checkbox" ${checked?'checked':''} ${enabled?'':'disabled'} aria-label="Marcar ${escapeHtml(exercise.name)} como completado"><div class="exercise-title-wrap"><div class="exercise-title-row"><h3>${indexPad(exercise.orden)}. ${escapeHtml(exercise.name)}</h3><span class="muscle-tag">${escapeHtml(exercise.muscle || 'General')}</span>${isCardio?'<span class="cardio-tag">CARDIO</span>':''}</div><p class="exercise-detail">${escapeHtml(exercise.detail || '')}</p>${exercise.description ? `<p class="exercise-description">${escapeHtml(exercise.description)}</p>` : ''}</div></div>${setMarkup}<div class="exercise-notes"><input class="exercise-note" type="text" maxlength="500" placeholder="${notePlaceholder}" value="${escapeHtml(log && log.notes || '')}" ${enabled?'':'disabled'}></div></article>`;
+  return `<article class="exercise-card ${checked?'is-done':''}" data-assignment-id="${escapeHtml(exercise.id)}"><div class="exercise-head"><input class="exercise-check" type="checkbox" ${checked?'checked':''} ${enabled?'':'disabled'} aria-label="Marcar ${escapeHtml(exercise.name)} como completado"><div class="exercise-title-wrap"><div class="exercise-title-row"><span class="exercise-order-badge">${escapeHtml(String(exercise.orden || 1).padStart(2,'0'))}</span><h3>${escapeHtml(exercise.name)}</h3><span class="muscle-tag">${escapeHtml(exercise.muscle || 'General')}</span>${isCardio?'<span class="cardio-tag">CARDIO</span>':''}<span class="exercise-status-tag ${checked?'is-complete':''}" data-exercise-status>${checked?'Completado':'Pendiente'}</span></div><p class="exercise-detail">${escapeHtml(exercise.detail || '')}</p>${exercise.description ? `<p class="exercise-description">${escapeHtml(exercise.description)}</p>` : ''}</div></div>${setMarkup}<div class="exercise-notes"><input class="exercise-note" type="text" maxlength="500" placeholder="${notePlaceholder}" value="${escapeHtml(log && log.notes || '')}" ${enabled?'':'disabled'}></div></article>`;
+}
+function updateRoutineExerciseSummary() {
+  const checks = Array.from($('exerciseList').querySelectorAll('.exercise-check'));
+  const total = checks.length;
+  const done = checks.filter(input => input.checked).length;
+  const percent = total ? Math.round(done / total * 100) : 0;
+  $('routineExerciseCount').textContent = String(total);
+  $('routineCompletedCount').textContent = String(done);
+  $('routineProgressText').textContent = `${percent}%`;
+  $('routineProgressFill').style.width = `${percent}%`;
 }
 function indexPad(n) { return String(n || '').trim(); }
 $('routineDaySelect').addEventListener('change', event => { selectedRoutineDay = event.target.value; renderRoutine(); });
@@ -374,7 +398,15 @@ $('finishWorkoutBtn').addEventListener('click', async () => {
 });
 $('exerciseList').addEventListener('change', event => {
   const card = event.target.closest('.exercise-card');
-  if (card && event.target.classList.contains('exercise-check')) card.classList.toggle('is-done', event.target.checked);
+  if (card && event.target.classList.contains('exercise-check')) {
+    card.classList.toggle('is-done', event.target.checked);
+    const status = card.querySelector('[data-exercise-status]');
+    if (status) {
+      status.textContent = event.target.checked ? 'Completado' : 'Pendiente';
+      status.classList.toggle('is-complete', event.target.checked);
+    }
+    updateRoutineExerciseSummary();
+  }
 });
 
 $('weightForm').addEventListener('submit', async event => {
@@ -506,13 +538,76 @@ function renderAdmin() {
   $('assignExercise').innerHTML = (adminData.catalog || []).map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.nombre)}</option>`).join('');
   renderAdminGyms();
   renderAdminUserGyms();
+  renderAssignExercisePreview();
   renderAdminAssignments();
+  renderAdminCatalog();
+}
+function renderAssignExercisePreview() {
+  const host = $('assignExercisePreview');
+  if (!host) return;
+  const exercise = (adminData && adminData.catalog || []).find(e => e.id === $('assignExercise').value);
+  if (!exercise) {
+    host.innerHTML = '<span class="preview-empty">No hay ejercicios disponibles. Crea uno en el catálogo.</span>';
+    return;
+  }
+  const isCardio = /^(sí|si)$/i.test(String(exercise.cardio || '')) || /cardio/i.test(String(exercise.nombre || ''));
+  host.innerHTML = `<div class="preview-topline"><span class="preview-label">Vista previa</span><span class="${isCardio?'cardio-tag':'muscle-tag'}">${isCardio?'CARDIO':escapeHtml(exercise.musculo || 'General')}</span></div><strong>${escapeHtml(exercise.nombre)}</strong><p>${escapeHtml(exercise.descripcion || 'Este ejercicio todavía no tiene descripción.')}</p><small>${escapeHtml(exercise.detalle || 'Define las series y repeticiones para esta rutina.')}</small>`;
 }
 function renderAdminAssignments() {
   if (!adminData) return;
   const uid = $('assignUserSelect').value;
-  const assignments = (adminData.assignments || []).filter(a => a.uid === uid).sort((a,b) => a.day.localeCompare(b.day) || a.orden-b.orden);
-  $('adminAssignments').innerHTML = assignments.length ? `<table class="data-table"><thead><tr><th>Día</th><th>#</th><th>Ejercicio</th><th>Descripción</th><th>Series / detalle</th><th></th></tr></thead><tbody>${assignments.map(a => `<tr><td>${escapeHtml(a.day)}</td><td>${escapeHtml(a.orden)}</td><td><strong>${escapeHtml(a.name)}</strong><br><small>${escapeHtml(a.muscle)}</small></td><td>${escapeHtml(a.description || '—')}</td><td>${escapeHtml(a.detail)}</td><td><button class="mini-action" data-remove-assignment="${escapeHtml(a.id)}">Quitar</button></td></tr>`).join('')}</tbody></table>` : '<p class="muted">Este usuario no tiene ejercicios asignados todavía.</p>';
+  const assignments = (adminData.assignments || []).filter(a => a.uid === uid).sort((a,b) => {
+    const dayOrder = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || Number(a.orden || 0) - Number(b.orden || 0);
+  });
+  const activeDays = new Set(assignments.map(a => a.day)).size;
+  $('assignedExerciseCount').textContent = String(assignments.length);
+  $('assignedDayCount').textContent = `${activeDays}/7`;
+  $('catalogExerciseCount').textContent = String((adminData.catalog || []).length);
+
+  const query = String($('assignmentSearch').value || '').trim().toLocaleLowerCase('es');
+  const selectedDay = $('assignmentDayFilter').value;
+  const filtered = assignments.filter(a => {
+    const matchesDay = !selectedDay || a.day === selectedDay;
+    const haystack = [a.name, a.muscle, a.description, a.detail, a.day].join(' ').toLocaleLowerCase('es');
+    return matchesDay && (!query || haystack.includes(query));
+  });
+  $('assignmentCount').textContent = filtered.length === assignments.length
+    ? `${assignments.length} ${assignments.length === 1 ? 'ejercicio' : 'ejercicios'}`
+    : `${filtered.length} de ${assignments.length}`;
+
+  if (!assignments.length) {
+    $('adminAssignments').innerHTML = '<div class="exercise-empty-state"><span class="exercise-empty-icon">＋</span><strong>Esta rutina todavía está vacía</strong><p>Añade ejercicios arriba o asigna la rutina base para empezar.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    $('adminAssignments').innerHTML = '<div class="exercise-empty-state"><strong>No encontramos coincidencias</strong><p>Prueba con otro nombre o cambia el filtro de día.</p></div>';
+    return;
+  }
+
+  const dayOrder = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const groupedDays = [...new Set(filtered.map(a => a.day))].sort((a,b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+  $('adminAssignments').innerHTML = groupedDays.map(day => {
+    const dayAssignments = filtered.filter(a => a.day === day);
+    return `<section class="assignment-day-group"><div class="assignment-day-heading"><div><span class="assignment-day-marker"></span><h4>${escapeHtml(day)}</h4></div><span>${dayAssignments.length} ${dayAssignments.length === 1 ? 'ejercicio' : 'ejercicios'}</span></div><div class="assignment-card-list">${dayAssignments.map(a => {
+      const isCardio = /^(sí|si)$/i.test(String(a.cardio || '')) || /cardio/i.test(String(a.name || ''));
+      return `<article class="assignment-admin-card"><div class="assignment-order-badge">${escapeHtml(String(a.orden || 1).padStart(2,'0'))}</div><div class="assignment-card-main"><div class="assignment-card-title"><strong>${escapeHtml(a.name)}</strong><span class="muscle-tag">${escapeHtml(a.muscle || 'General')}</span>${isCardio?'<span class="cardio-tag">CARDIO</span>':''}</div><p class="assignment-card-description">${escapeHtml(a.description || 'Sin descripción registrada.')}</p><div class="assignment-card-prescription"><span>Series / detalle</span><strong>${escapeHtml(a.detail || 'Sin prescripción')}</strong></div></div><button class="mini-action assignment-remove-btn" data-remove-assignment="${escapeHtml(a.id)}" type="button" aria-label="Quitar ${escapeHtml(a.name)}">Quitar</button></article>`;
+    }).join('')}</div></section>`;
+  }).join('');
+}
+function renderAdminCatalog() {
+  if (!adminData) return;
+  const catalog = adminData.catalog || [];
+  const query = String($('catalogSearch').value || '').trim().toLocaleLowerCase('es');
+  const filtered = catalog.filter(exercise => [exercise.nombre, exercise.musculo, exercise.descripcion, exercise.detalle, exercise.cardio]
+    .join(' ').toLocaleLowerCase('es').includes(query));
+  $('catalogCount').textContent = filtered.length === catalog.length
+    ? `${catalog.length} ${catalog.length === 1 ? 'ejercicio' : 'ejercicios'}`
+    : `${filtered.length} de ${catalog.length}`;
+  $('adminCatalogList').innerHTML = filtered.length ? filtered.map(exercise => {
+    const isCardio = /^(sí|si)$/i.test(String(exercise.cardio || '')) || /cardio/i.test(String(exercise.nombre || ''));
+    return `<article class="catalog-exercise-card"><div class="catalog-exercise-icon">${isCardio?'↗':'✦'}</div><div class="catalog-exercise-main"><div class="catalog-exercise-title"><strong>${escapeHtml(exercise.nombre)}</strong><span class="muscle-tag">${escapeHtml(exercise.musculo || 'General')}</span>${isCardio?'<span class="cardio-tag">CARDIO</span>':''}</div><p>${escapeHtml(exercise.descripcion || 'Sin descripción registrada.')}</p><div class="catalog-exercise-detail">${escapeHtml(exercise.detalle || 'Sin series predeterminadas')}</div></div><button class="btn btn-secondary catalog-use-btn" data-use-catalog="${escapeHtml(exercise.id)}" type="button">Usar</button></article>`;
+  }).join('') : '<div class="exercise-empty-state"><strong>No hay resultados en el catálogo</strong><p>Intenta otra búsqueda o crea un ejercicio nuevo.</p></div>';
 }
 $('refreshAdminBtn').addEventListener('click', () => loadAdminData().then(()=>showToast('Datos de administración actualizados.', 'success')).catch(e=>showToast(e.message,'error')));
 $('createUserForm').addEventListener('submit', async event => {
@@ -546,6 +641,21 @@ $('assignUserSelect').addEventListener('change', () => loadAdminData($('assignUs
 $('assignExercise').addEventListener('change', () => {
   const exercise = (adminData && adminData.catalog || []).find(e=>e.id===$('assignExercise').value);
   if (exercise) $('assignDetail').value = exercise.detalle || '';
+  renderAssignExercisePreview();
+});
+$('assignmentSearch').addEventListener('input', renderAdminAssignments);
+$('assignmentDayFilter').addEventListener('change', renderAdminAssignments);
+$('catalogSearch').addEventListener('input', renderAdminCatalog);
+$('adminCatalogList').addEventListener('click', event => {
+  const button = event.target.closest('[data-use-catalog]');
+  if (!button) return;
+  const exercise = (adminData && adminData.catalog || []).find(item => item.id === button.dataset.useCatalog);
+  if (!exercise) return;
+  $('assignExercise').value = exercise.id;
+  $('assignDetail').value = exercise.detalle || '';
+  renderAssignExercisePreview();
+  $('assignExerciseForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`“${exercise.nombre}” seleccionado. Elige el día y añádelo a la rutina.`, 'success');
 });
 $('assignTemplateBtn').addEventListener('click', async () => {
   const uid = $('assignUserSelect').value; if (!uid) return showToast('Selecciona un usuario.', 'error');
