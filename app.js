@@ -48,36 +48,119 @@ function showSetupNotice() {
 }
 showSetupNotice();
 
-if (auth) {
-  setPersistence(auth, browserLocalPersistence).then(() => onAuthStateChanged(auth, async user => {
-    currentUser = user;
-    if (!user) {
-      appData = null;
-      $('authScreen').classList.remove('hidden');
-      $('appScreen').classList.add('hidden');
-      if (PAGE_NAME !== 'login.html') location.replace('login.html');
+let authStateVersion = 0;
+
+function revealLogin(message = '') {
+  $('authScreen').classList.remove('hidden');
+  $('appScreen').classList.add('hidden');
+  if (message) $('authMessage').textContent = message;
+  document.body.classList.remove('auth-pending');
+}
+
+function showAuthenticatedLoadError(error, user, version) {
+  // La autenticación Firebase sigue activa: un fallo temporal del backend
+  // nunca debe cerrar la sesión ni enviar al usuario al login.
+  $('authScreen').classList.add('hidden');
+  $('appScreen').classList.remove('hidden');
+  document.querySelectorAll('.view-section').forEach(section => section.classList.add('hidden'));
+
+  const main = document.querySelector('.main-content');
+  let panel = $('authBootstrapError');
+  if (!panel) {
+    panel = document.createElement('article');
+    panel.id = 'authBootstrapError';
+    panel.className = 'panel auth-load-error';
+    const footer = document.querySelector('.app-footer');
+    main.insertBefore(panel, footer || null);
+  }
+
+  panel.innerHTML = `
+    <div class="auth-load-error-icon">!</div>
+    <p class="eyebrow">SESIÓN ACTIVA</p>
+    <h2>No se pudieron cargar tus datos</h2>
+    <p class="auth-load-error-message"></p>
+    <p class="muted">Tu cuenta continúa conectada. Puedes volver a intentarlo sin ingresar nuevamente tu contraseña.</p>
+    <div class="auth-load-error-actions">
+      <button id="retryBootstrapBtn" class="btn btn-primary" type="button">Reintentar conexión</button>
+      <button id="logoutFromErrorBtn" class="btn btn-secondary" type="button">Cerrar sesión</button>
+    </div>`;
+  panel.querySelector('.auth-load-error-message').textContent =
+    error && error.message ? error.message : 'No fue posible comunicarse con el servidor.';
+
+  $('appNav').style.pointerEvents = 'none';
+  $('appNav').style.opacity = '.45';
+  document.body.classList.remove('auth-pending');
+
+  $('retryBootstrapBtn').addEventListener('click', () => bootstrapAuthenticatedUser(user, version));
+  $('logoutFromErrorBtn').addEventListener('click', async () => {
+    try { await signOut(auth); } catch (signOutError) { console.error(signOutError); }
+  });
+}
+
+async function bootstrapAuthenticatedUser(user, version) {
+  currentUser = user;
+  try {
+    document.body.classList.add('busy');
+    const data = await api('bootstrap');
+    if (version !== authStateVersion || !auth.currentUser) return;
+    if (!data || !data.profile) throw new Error('El servidor respondió, pero no devolvió el perfil del usuario.');
+
+    appData = data;
+    if (PAGE_NAME === 'login.html') {
+      location.replace('index.html');
       return;
     }
-    try {
-      setBusy(true, 'Verificando tu cuenta…');
-      appData = await api('bootstrap');
-      if (PAGE_NAME === 'login.html') { location.replace('index.html'); return; }
-      if (PAGE_NAME === 'administracion.html' && !['admin','administrador'].includes(appData.profile.rol)) { location.replace('index.html'); return; }
-      selectedRoutineDay = appData.todayDay;
-      renderAll();
-      $('authScreen').classList.add('hidden');
-      $('appScreen').classList.remove('hidden');
-      $('authMessage').textContent = '';
-      if (appData.profile.rol === 'admin' || appData.profile.rol === 'administrador') $('adminNavBtn').classList.remove('hidden');
-      else $('adminNavBtn').classList.add('hidden');
-      setView(currentView === 'login' ? 'dashboard' : currentView);
-    } catch (error) {
-      $('authScreen').classList.remove('hidden');
-      $('appScreen').classList.add('hidden');
-      $('authMessage').textContent = error.message || 'No se pudo verificar el usuario.';
-      try { await signOut(auth); } catch (_) {}
-    } finally { setBusy(false); }
-  })).catch(error => { console.error('No se pudo restaurar la sesión Firebase:', error); $('authMessage').textContent = 'No se pudo inicializar la sesión. Revisa la configuración de Firebase.'; });
+    if (PAGE_NAME === 'administracion.html' && !['admin','administrador'].includes(appData.profile.rol)) {
+      location.replace('index.html');
+      return;
+    }
+
+    selectedRoutineDay = appData.todayDay;
+    renderAll();
+    $('authScreen').classList.add('hidden');
+    $('appScreen').classList.remove('hidden');
+    $('authMessage').textContent = '';
+    $('appNav').style.pointerEvents = '';
+    $('appNav').style.opacity = '';
+    const oldError = $('authBootstrapError');
+    if (oldError) oldError.remove();
+
+    if (appData.profile.rol === 'admin' || appData.profile.rol === 'administrador') $('adminNavBtn').classList.remove('hidden');
+    else $('adminNavBtn').classList.add('hidden');
+    setView(currentView === 'login' ? 'dashboard' : currentView);
+    document.body.classList.remove('auth-pending');
+  } catch (error) {
+    if (version !== authStateVersion) return;
+    console.error('No se pudieron cargar los datos de GymTrack:', error);
+    showAuthenticatedLoadError(error, user, version);
+  } finally {
+    document.body.classList.remove('busy');
+  }
+}
+
+if (auth) {
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => onAuthStateChanged(auth, user => {
+      const version = ++authStateVersion;
+      currentUser = user;
+      if (!user) {
+        appData = null;
+        $('appScreen').classList.add('hidden');
+        $('authScreen').classList.remove('hidden');
+        $('appNav').style.pointerEvents = '';
+        $('appNav').style.opacity = '';
+        document.body.classList.remove('auth-pending');
+        if (PAGE_NAME !== 'login.html') location.replace('login.html');
+        return;
+      }
+      bootstrapAuthenticatedUser(user, version);
+    }))
+    .catch(error => {
+      console.error('No se pudo restaurar la sesión Firebase:', error);
+      revealLogin('No se pudo restaurar la sesión. Verifica que el navegador permita el almacenamiento local e inténtalo de nuevo.');
+    });
+} else {
+  revealLogin();
 }
 
 $('loginForm').addEventListener('submit', async event => {

@@ -204,3 +204,8 @@ Sube a la raíz de Netlify todos estos archivos: `login.html`, `index.html`, `co
 ### Apps Script
 
 La URL del frontend apunta a la implementación compartida por el usuario. Si el código de Apps Script cambia, publica una nueva versión de la implementación web. La constante `FIREBASE_API_KEY` de `Codigo.gs` debe coincidir con la API key de `firebase-config.js`.
+
+
+## Corrección de sesión entre páginas
+
+Esta versión evita mostrar el formulario de acceso mientras Firebase restaura la sesión al cambiar de página. La autenticación usa persistencia local del navegador. Si Apps Script o Google Sheets no responden temporalmente, la sesión Firebase se conserva y se muestra una pantalla de reintento; un error de carga de datos ya no cierra automáticamente la sesión. Para aplicar el arreglo, reemplaza todos los HTML, `app.js` y `styles.css` en la raíz publicada de Netlify.

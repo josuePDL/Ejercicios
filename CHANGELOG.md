@@ -14,3 +14,5 @@
 - Panel de administración con estadísticas, asignaciones agrupadas por día, filtros y búsqueda.
 - Vista previa del ejercicio antes de asignarlo y catálogo con búsqueda y selección rápida.
 - Ajustes responsive para móviles y pantallas pequeñas.
+
+- Corregida la restauración de sesión al navegar entre páginas: se oculta el login durante la comprobación de Firebase y los errores temporales del backend ya no cierran la sesión.

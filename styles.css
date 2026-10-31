@@ -164,3 +164,19 @@
   .catalog-use-btn{padding:7px 9px}
   .catalog-exercise-main>p{font-size:9px}
 }
+
+
+/* Restauración de sesión: no mostrar el login durante el chequeo de Firebase */
+body.auth-pending #authScreen,
+body.auth-pending #appScreen {
+  visibility: hidden !important;
+}
+.auth-load-error { max-width: 760px; margin: 32px auto; padding: clamp(24px, 5vw, 48px); }
+.auth-load-error h2 { margin: 0 0 10px; font-size: clamp(22px, 3vw, 30px); letter-spacing: -.04em; }
+.auth-load-error-message { color: #a33b3b; font-weight: 700; overflow-wrap: anywhere; }
+.auth-load-error-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: #fff0d9; color: #8a5700; font-weight: 900; font-size: 22px; margin-bottom: 18px; }
+.auth-load-error-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+@media(max-width:600px) {
+  .auth-load-error-actions { flex-direction: column; }
+  .auth-load-error-actions .btn { width: 100%; }
+}
