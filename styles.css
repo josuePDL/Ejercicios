@@ -34,3 +34,133 @@
 .sub-panel-heading{margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
 .divider-line{height:1px;background:var(--line);margin:22px 0}
 @media(max-width:600px){.gym-select-wrap{max-width:none;width:100%;align-self:stretch}.catalog-form{grid-template-columns:1fr}.catalog-form .span-all{grid-column:auto}.admin-gym-row{align-items:flex-start;flex-wrap:wrap}.admin-gym-info{flex-basis:100%}}
+
+
+/* Panel de ejercicios: rutina, asignaciones y catálogo */
+.exercise-list-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:22px 0 13px}
+.exercise-list-heading h3{font-size:17px;letter-spacing:-.035em;margin:0 0 5px}
+.exercise-list-heading .muted{font-size:11px;margin:0;max-width:620px}
+.exercise-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(90px,1fr));gap:8px;flex-shrink:0}
+.exercise-summary-item{min-width:100px;padding:10px 13px;border:1px solid #e3e8f4;background:#fff;border-radius:12px;display:flex;flex-direction:column;gap:1px}
+.exercise-summary-item span{font-size:9px;color:#7f899c;font-weight:700}
+.exercise-summary-item strong{font-size:20px;line-height:1.25;letter-spacing:-.05em}
+.exercise-card{position:relative;overflow:hidden;transition:border-color .18s,box-shadow .18s,transform .18s}
+.exercise-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#dce3f2;transition:background .18s}
+.exercise-card:hover{border-color:#d4dcf2;box-shadow:0 8px 24px rgba(39,55,98,.045)}
+.exercise-card.is-done:before{background:#21a576}
+.exercise-title-row{gap:8px}
+.exercise-title-row h3{font-size:14px;font-weight:800}
+.exercise-order-badge{display:inline-grid;place-items:center;min-width:27px;height:25px;padding:0 5px;border-radius:8px;background:#eef1ff;color:#5268df;font-size:10px;font-weight:800}
+.exercise-status-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:6px;background:#f1f3f7;color:#778196;font-size:9px;font-weight:800;letter-spacing:.02em}
+.exercise-status-tag:before{content:"";width:5px;height:5px;border-radius:50%;background:#9aa4b6}
+.exercise-status-tag.is-complete{background:#e2f8ed;color:#17794f}
+.exercise-status-tag.is-complete:before{background:#20a66f}
+.exercise-description{font-size:12px;line-height:1.65;color:#56637a;margin-top:9px}
+.set-grid{max-width:470px;padding:12px 13px;background:#f7f8fc;border:1px solid #edf0f6;border-radius:12px;grid-template-columns:58px repeat(2,minmax(95px,145px));}
+.set-grid .set-header{letter-spacing:.08em}
+.set-number{font-weight:700}
+.set-grid input{background:#fff;border-color:#e1e6f0}
+.exercise-notes input{background:#fbfcff}
+.exercise-card.is-done .exercise-notes input{border-color:#dceee4}
+
+.admin-exercise-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}
+.admin-exercise-stat{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 16px;border:1px solid #e6eaf4;border-radius:14px;background:linear-gradient(145deg,#fff,#f9faff);min-width:0}
+.admin-exercise-stat>span{font-size:10px;color:#7d879a;font-weight:700}
+.admin-exercise-stat>strong{font-size:25px;line-height:1.2;letter-spacing:-.06em;color:#1e2a43}
+.admin-exercise-stat>small{font-size:9px;color:#9aa2b1}
+.assignment-builder{padding:17px;border:1px solid #e4e9f4;border-radius:16px;background:#f9faff}
+.exercise-subheading{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}
+.exercise-subheading h4,.catalog-browser-heading h4{font-size:14px;letter-spacing:-.025em;margin:0 0 4px}
+.exercise-subheading .muted{font-size:11px;margin:0}
+.exercise-assignment-form{grid-template-columns:minmax(135px,.65fr) minmax(230px,1.35fr) minmax(190px,1fr) auto;margin:0;align-items:start}
+.exercise-assignment-form>label{display:flex;flex-direction:column;gap:7px}
+.exercise-assignment-form .grow-field{font-size:11px}
+.assign-exercise-field{display:flex;flex-direction:column;gap:8px;min-width:0}
+.assign-exercise-field>label{display:flex;flex-direction:column;gap:7px}
+.exercise-select-preview{min-height:91px;padding:10px 12px;border:1px solid #e4e8f2;border-radius:11px;background:#fff;display:flex;flex-direction:column;gap:5px;min-width:0}
+.exercise-select-preview>strong{font-size:11px;line-height:1.35}
+.exercise-select-preview>p{font-size:10px;line-height:1.5;color:#68748a;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.exercise-select-preview>small{font-size:9px;color:#8a94a7}
+.preview-topline{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.preview-label{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#a0a7b6;font-weight:800}
+.preview-empty{font-size:10px;color:#9099aa;margin:auto 0}
+.assignment-list-panel{margin-top:22px}
+.assignment-list-heading{align-items:flex-start;margin-bottom:12px}
+.assignment-list-heading .muted{max-width:680px;font-size:11px;margin:5px 0 0}
+.assignment-filters{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(170px,.6fr);gap:12px;padding:13px;border:1px solid #e9edf5;background:#fafbfe;border-radius:13px;margin-bottom:14px}
+.assignment-filters label,.catalog-search-label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:10px;font-weight:800;color:#707b90}
+.assignment-filters input,.assignment-filters select,.catalog-search-label input{width:100%;font-size:11px;background:#fff}
+.admin-assignment-list{display:flex;flex-direction:column;gap:16px}
+.assignment-day-group{border:1px solid #e6eaf2;border-radius:14px;overflow:hidden;background:#fff}
+.assignment-day-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:#f7f8fc;border-bottom:1px solid #edf0f5}
+.assignment-day-heading>div{display:flex;align-items:center;gap:8px}
+.assignment-day-heading h4{font-size:12px;margin:0}
+.assignment-day-heading>span{font-size:9px;font-weight:800;color:#8993a5}
+.assignment-day-marker{width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 4px #edf1ff}
+.assignment-card-list{display:flex;flex-direction:column;padding:0 13px}
+.assignment-admin-card{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid #eff1f6;min-width:0}
+.assignment-admin-card:last-child{border-bottom:0}
+.assignment-order-badge{display:grid;place-items:center;flex:0 0 31px;height:31px;border-radius:9px;background:#edf1ff;color:#5067de;font-size:10px;font-weight:800}
+.assignment-card-main{flex:1;min-width:0}
+.assignment-card-title,.catalog-exercise-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.assignment-card-title>strong,.catalog-exercise-title>strong{font-size:12px;overflow-wrap:anywhere}
+.assignment-card-description{font-size:10px;line-height:1.6;color:#748096;margin:7px 0 9px;overflow-wrap:anywhere;white-space:pre-wrap}
+.assignment-card-prescription{display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;padding:8px 10px;border-radius:8px;background:#f8f9fc}
+.assignment-card-prescription>span{font-size:8px;color:#929bad;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.assignment-card-prescription>strong{font-size:10px;color:#4e5b73;overflow-wrap:anywhere}
+.assignment-remove-btn{flex-shrink:0;color:#b24b54;background:#fff2f2;border:1px solid #f5dfe0}
+.assignment-remove-btn:hover{background:#ffe6e7}
+.exercise-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:28px 18px;border:1px dashed #dce2ee;border-radius:14px;background:#fbfcff;text-align:center}
+.exercise-empty-state>strong{font-size:12px}
+.exercise-empty-state>p{font-size:10px;color:#8993a5;margin:0;max-width:330px}
+.exercise-empty-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#edf1ff;color:#4e65df;font-size:20px;margin-bottom:4px}
+.catalog-create-wrap{margin-top:26px;padding-top:22px}
+.catalog-create-wrap>.panel-heading{margin-bottom:13px}
+.catalog-browser{margin-top:23px;padding-top:20px;border-top:1px solid #e9edf4}
+.catalog-browser-heading{align-items:center;margin-bottom:12px}
+.catalog-browser-heading h4{margin:0}
+.catalog-search-label{margin-bottom:12px}
+.catalog-search-label input{max-width:100%}
+.admin-catalog-list{display:flex;flex-direction:column;gap:9px;max-height:510px;overflow-y:auto;padding-right:3px}
+.catalog-exercise-card{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid #e7ebf3;border-radius:13px;background:#fff;transition:border-color .18s,box-shadow .18s}
+.catalog-exercise-card:hover{border-color:#d4dcf2;box-shadow:0 6px 18px rgba(39,55,98,.04)}
+.catalog-exercise-icon{display:grid;place-items:center;flex:0 0 33px;height:33px;border-radius:10px;background:#eef1ff;color:#5268df;font-weight:800}
+.catalog-exercise-main{flex:1;min-width:0}
+.catalog-exercise-main>p{font-size:10px;line-height:1.55;color:#778297;margin:7px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.catalog-exercise-detail{display:inline-block;max-width:100%;padding:5px 8px;border-radius:7px;background:#f6f7fb;color:#68748a;font-size:9px;overflow-wrap:anywhere}
+.catalog-use-btn{flex-shrink:0;padding:8px 11px;font-size:10px}
+@media(max-width:1180px){
+  .exercise-assignment-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .exercise-assignment-form>button{width:100%;align-self:end}
+  .exercise-select-preview{min-height:75px}
+}
+@media(max-width:900px){
+  .admin-exercise-summary{gap:8px}
+  .admin-exercise-stat{padding:12px}
+  .admin-exercise-stat>strong{font-size:22px}
+  .exercise-assignment-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .exercise-list-heading{align-items:stretch;flex-direction:column;gap:12px}
+  .exercise-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .exercise-summary-item{min-width:0}
+  .exercise-summary-item strong{font-size:18px}
+  .set-grid{margin-left:0;grid-template-columns:54px repeat(2,minmax(0,1fr));padding:10px 8px;gap:6px}
+  .exercise-notes{margin-left:0}
+  .exercise-title-row h3{font-size:13px}
+  .admin-exercise-summary{grid-template-columns:1fr 1fr}
+  .admin-exercise-stat:last-child{grid-column:1/-1}
+  .admin-exercise-stat>strong{font-size:20px}
+  .assignment-builder{padding:13px}
+  .exercise-assignment-form,.assignment-filters{grid-template-columns:1fr}
+  .exercise-assignment-form>button{width:100%}
+  .assignment-card-list{padding:0 10px}
+  .assignment-admin-card{gap:8px;flex-wrap:wrap}
+  .assignment-card-main{flex-basis:calc(100% - 42px)}
+  .assignment-remove-btn{margin-left:39px}
+  .assignment-card-title>strong,.catalog-exercise-title>strong{font-size:11px}
+  .catalog-exercise-card{gap:8px;padding:10px}
+  .catalog-exercise-icon{flex-basis:29px;height:29px}
+  .catalog-use-btn{padding:7px 9px}
+  .catalog-exercise-main>p{font-size:9px}
+}
