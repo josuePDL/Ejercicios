@@ -115,7 +115,7 @@ async function bootstrapAuthenticatedUser(user, version) {
       return;
     }
 
-    selectedRoutineDay = appData.todayDay;
+    selectedRoutineDay = appData.session ? appData.session.day : appData.todayDay;
     renderAll();
     $('authScreen').classList.add('hidden');
     $('appScreen').classList.remove('hidden');
@@ -323,7 +323,7 @@ function renderDashboard() {
     const day = d.toLocaleDateString('es-GT', { day:'2-digit' });
     const month = d.toLocaleDateString('es-GT', { month:'short' }).replace('.','');
     const statusText = session.status === 'completada' ? 'Finalizada' : session.status === 'activa' ? 'En curso' : 'Histórica / incompleta';
-    return `<div class="session-row"><div class="session-calendar"><strong>${escapeHtml(day)}</strong><small>${escapeHtml(month)}</small></div><div><strong>${escapeHtml(session.day)} · ${escapeHtml(statusText)}</strong><small>${session.checkInAt ? 'Llegada validada ' + escapeHtml(String(session.checkInAt).slice(11,16)) : 'Registro importado o anterior'}</small></div><span class="session-percent">${session.status === 'completada' ? fmt(session.percent,0) + '%' : '—'}</span></div>`;
+    return `<div class="session-row"><div class="session-calendar"><strong>${escapeHtml(day)}</strong><small>${escapeHtml(month)}</small></div><div><strong>${session.makeup ? 'Reposición · ' : ''}${escapeHtml(session.day)} · ${escapeHtml(statusText)}</strong><small>${session.checkInAt ? 'Llegada validada ' + escapeHtml(String(session.checkInAt).slice(11,16)) : 'Registro importado o anterior'}</small></div><span class="session-percent">${session.status === 'completada' ? fmt(session.percent,0) + '%' : '—'}</span></div>`;
   }).join('') : '<p class="muted">Todavía no hay sesiones registradas. Entra en Mi rutina para empezar.</p>';
   const weak = appData.weakPoints || [];
   $('weakPoints').innerHTML = weak.length ? weak.map(item => `<div class="weak-row"><div class="weak-name"><strong>${escapeHtml(item.name)}</strong><small>${item.times} ${item.times===1?'registro':'registros'} sin completar</small></div><div class="weak-bar"><span style="width:${Math.max(8,Math.min(100,item.times/Math.max(...weak.map(w=>w.times))*100))}%"></span></div></div>`).join('') : '<p class="muted">Todavía no hay ejercicios marcados como pendientes en los registros guardados.</p>';
@@ -370,24 +370,29 @@ function renderRoutine() {
   $('gymNameLabel').textContent = gyms.length > 1 ? `${gyms.length} gimnasios autorizados` : (gym.name || 'Gimnasio');
   $('gymStatusText').textContent = gyms.length > 1 ? 'Selecciona la sede donde estás y confirma tu llegada.' : gyms.length === 1 ? `Zona activa · radio ${gym.radiusMeters} m · precisión GPS máxima ${gym.maxAccuracyMeters} m.` : 'El administrador debe asignarte al menos un gimnasio autorizado.';
   const session = appData.session;
-  const isToday = selectedRoutineDay === appData.todayDay;
+  const todayHasRoutine = ((appData.assignmentsByDay && appData.assignmentsByDay[appData.todayDay]) || []).length > 0;
+  // Día "en curso": el de la sesión de hoy (puede ser una reposición) o el día real.
+  const workingDay = session ? session.day : appData.todayDay;
+  const isToday = selectedRoutineDay === workingDay;
   const active = !!(session && session.status === 'activa' && isToday);
   const finished = !!(session && session.status === 'completada' && isToday);
   const assigned = (appData.assignmentsByDay && appData.assignmentsByDay[selectedRoutineDay]) || [];
+  // Hoy sin rutina y sin sesión: el día seleccionado puede hacerse como reposición.
+  const canMakeUp = !session && !todayHasRoutine && selectedRoutineDay !== appData.todayDay && assigned.length > 0;
   const todayLogs = isToday ? new Map((appData.routine || []).map(a => [a.id, a.log])) : new Map();
   const doneCount = assigned.filter(a => { const log = todayLogs.get(a.id); return log && log.completed; }).length;
   const percent = assigned.length ? Math.round(doneCount/assigned.length*100) : 0;
   $('routineProgressText').textContent = percent + '%';
   $('routineProgressFill').style.width = percent + '%';
   if (active) {
-    $('sessionStatus').textContent = `Llegada validada · ${session.gymName ? session.gymName + ' · ' : ''}${fmt(session.distanceM,0)} m del punto`; $('sessionStatus').className = 'session-status active';
+    $('sessionStatus').textContent = `${session.makeup ? 'Reposición de ' + session.day + ' · ' : ''}Llegada validada · ${session.gymName ? session.gymName + ' · ' : ''}${fmt(session.distanceM,0)} m del punto`; $('sessionStatus').className = 'session-status active';
   } else if (finished) {
-    $('sessionStatus').textContent = 'Sesión finalizada'; $('sessionStatus').className = 'session-status done';
+    $('sessionStatus').textContent = session.makeup ? 'Reposición de ' + session.day + ' finalizada' : 'Sesión finalizada'; $('sessionStatus').className = 'session-status done';
   } else {
     $('sessionStatus').textContent = 'Sesión no iniciada'; $('sessionStatus').className = 'session-status';
   }
-  $('checkInBtn').disabled = !isToday || !assigned.length || !gyms.length || active || finished;
-  $('checkInBtn').innerHTML = active ? 'Llegada validada' : finished ? 'Sesión finalizada' : '<svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Confirmar llegada';
+  $('checkInBtn').disabled = (!isToday && !canMakeUp) || !assigned.length || !gyms.length || active || finished;
+  $('checkInBtn').innerHTML = active ? 'Llegada validada' : finished ? 'Sesión finalizada' : '<svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>' + (canMakeUp ? 'Confirmar llegada · reposición' : 'Confirmar llegada');
   $('saveWorkoutBtn').disabled = !active;
   $('finishWorkoutBtn').disabled = !active;
   $('sessionNotes').disabled = !active;
@@ -398,11 +403,14 @@ function renderRoutine() {
   }
   updateRoutineExerciseSummary();
   const notice = $('routineNotice');
-  if (!isToday) { notice.textContent = `Estás consultando ${selectedRoutineDay}. Solo puedes activar la rutina del día actual (${appData.todayDay}).`; notice.className='notice-box'; }
+  if (canMakeUp && !gyms.length) { notice.textContent = 'No tienes gimnasios autorizados. Pide al administrador que te asigne una sede.'; notice.className='notice-box error'; }
+  else if (canMakeUp) { notice.textContent = `Hoy (${appData.todayDay}) no tienes rutina asignada. Puedes usar este día como reposición de ${selectedRoutineDay}: confirma tu llegada para habilitarla.`; notice.className='notice-box success'; }
+  else if (!isToday && session) { notice.textContent = `Hoy estás haciendo ${session.makeup ? 'la reposición de ' : 'la rutina de '}${session.day}. Selecciona ese día para registrar tus series.`; notice.className='notice-box'; }
+  else if (!isToday) { notice.textContent = `Estás consultando ${selectedRoutineDay}. Solo puedes activar la rutina del día actual (${appData.todayDay}).`; notice.className='notice-box'; }
   else if (!gyms.length) { notice.textContent = 'No tienes gimnasios autorizados. Pide al administrador que te asigne una sede.'; notice.className='notice-box error'; }
   else if (active) { notice.textContent = 'Llegada verificada. Ya puedes registrar series, repeticiones y ejercicios completados.'; notice.className='notice-box success'; }
   else if (finished) { notice.textContent = 'Esta sesión ya fue finalizada. Puedes consultar el registro, pero no modificarlo.'; notice.className='notice-box success'; }
-  else if (!assigned.length) { notice.textContent = 'No hay ejercicios asignados para hoy.'; notice.className='notice-box error'; }
+  else if (!assigned.length) { const offerMakeUp = !todayHasRoutine && (appData.assignedDays || []).length; notice.textContent = offerMakeUp ? 'Hoy no tienes rutina asignada. Elige otro de tus días en el selector para hacerlo como reposición.' : 'No hay ejercicios asignados para hoy.'; notice.className = 'notice-box' + (offerMakeUp ? '' : ' error'); }
   else { const selectedGym = gyms.find(g => g.id === $('checkInGymSelect').value) || gyms[0]; notice.textContent = `Para activar los ejercicios, confirma tu llegada dentro del radio de ${selectedGym ? selectedGym.radiusMeters : 150} m y con precisión GPS suficiente.`; notice.className='notice-box'; }
   if (!active && !finished) $('sessionNotes').value = '';
   else if (session) $('sessionNotes').value = session.notes || '';
@@ -444,7 +452,7 @@ $('checkInBtn').addEventListener('click', async () => {
   navigator.geolocation.getCurrentPosition(async position => {
     try {
       setBusy(true, 'Validando tu llegada…');
-      await api('checkIn', { gymId: $('checkInGymSelect').value, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
+      await api('checkIn', { gymId: $('checkInGymSelect').value, routineDay: selectedRoutineDay, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
       await refreshAppData();
       showToast('Llegada validada. Tu rutina está habilitada.', 'success');
     } catch (error) { showToast(error.message, 'error'); }
