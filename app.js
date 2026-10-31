@@ -76,7 +76,7 @@ function showAuthenticatedLoadError(error, user, version) {
 
   panel.innerHTML = `
     <div class="auth-load-error-icon">!</div>
-    <p class="eyebrow">SESIÓN ACTIVA</p>
+    <p class="eyebrow">Sesión activa</p>
     <h2>No se pudieron cargar tus datos</h2>
     <p class="auth-load-error-message"></p>
     <p class="muted">Tu cuenta continúa conectada. Puedes volver a intentarlo sin ingresar nuevamente tu contraseña.</p>
@@ -301,7 +301,7 @@ function setView(view) {
   document.querySelectorAll('.nav-item[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
   const titles = { dashboard:'Resumen', routine:'Mi rutina', body:'Control corporal', evolt:'EVOLT 360', admin:'Administración' };
   $('pageTitle').textContent = titles[view] || 'GymTrack';
-  $('topEyebrow').textContent = view === 'admin' ? 'CONTROL DE ACCESO' : 'TU ESPACIO PERSONAL';
+  $('topEyebrow').textContent = view === 'admin' ? 'Control de acceso' : 'Tu espacio personal';
   if (view === 'admin') loadAdminData().catch(e => showToast(e.message, 'error'));
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => goToView(button.dataset.view)));
@@ -343,10 +343,16 @@ function drawLineChart(elementId, rows, key, suffix = '') {
   const x = i => left + (i/(pointsData.length-1))*plotW;
   const y = val => top + ((max-val)/(max-min))*plotH;
   const points = pointsData.map((r,i)=>`${x(i).toFixed(1)},${y(Number(r[key])).toFixed(1)}`).join(' ');
-  const grid = [max,(max+min)/2,min].map(v=>`<g><line x1="${left}" y1="${y(v)}" x2="${W-right}" y2="${y(v)}" stroke="#e9edf4" stroke-dasharray="4 5"/><text x="${left-8}" y="${y(v)+4}" fill="#98a1b2" font-size="10" text-anchor="end">${fmt(v,1)}</text></g>`).join('');
-  const circles = pointsData.map((r,i)=>`<circle cx="${x(i)}" cy="${y(Number(r[key]))}" r="4" fill="#4769f5" stroke="#fff" stroke-width="2"><title>${escapeHtml(r.date)}: ${fmt(r[key])} ${suffix}</title></circle>`).join('');
-  const labels = [0,Math.floor((pointsData.length-1)/2),pointsData.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>`<text x="${x(i)}" y="${H-12}" fill="#98a1b2" font-size="10" text-anchor="${i===0?'start':i===pointsData.length-1?'end':'middle'}">${escapeHtml(String(pointsData[i].date).slice(5))}</text>`).join('');
-  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica de evolución">${grid}<polyline points="${points}" fill="none" stroke="#4769f5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${circles}${labels}</svg>`;
+  const grid = [max,(max+min)/2,min].map(v=>`<g><line class="chart-grid" x1="${left}" y1="${y(v)}" x2="${W-right}" y2="${y(v)}"/><text class="chart-label" x="${left-8}" y="${y(v)+4}" text-anchor="end">${fmt(v,1)}</text></g>`).join('');
+  const lastIndex = pointsData.length - 1;
+  const circles = pointsData.map((r,i)=>`<circle class="chart-dot${i===lastIndex?' last':''}" cx="${x(i)}" cy="${y(Number(r[key]))}" r="${i===lastIndex?6:3.5}"><title>${escapeHtml(r.date)}: ${fmt(r[key])} ${suffix}</title></circle>`).join('');
+  const labels = [0,Math.floor((pointsData.length-1)/2),pointsData.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>`<text class="chart-label" x="${x(i)}" y="${H-12}" text-anchor="${i===0?'start':i===pointsData.length-1?'end':'middle'}">${escapeHtml(String(pointsData[i].date).slice(5))}</text>`).join('');
+  const gradId = 'grad-' + elementId;
+  const baseY = (H - bottom).toFixed(1);
+  const area = `M${x(0).toFixed(1)},${baseY} L${points.split(' ').join(' L')} L${x(lastIndex).toFixed(1)},${baseY} Z`;
+  const lastY = y(Number(pointsData[lastIndex][key]));
+  const valueLabel = `<text class="chart-value" x="${x(lastIndex)}" y="${Math.max(14, lastY - 14)}" text-anchor="end">${fmt(pointsData[lastIndex][key])} ${escapeHtml(suffix)}</text>`;
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica de evolución"><defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1"><stop class="chart-area-top" offset="0"/><stop class="chart-area-bottom" offset="1"/></linearGradient></defs>${grid}<path d="${area}" fill="url(#${gradId})"/><polyline class="chart-line" points="${points}"/>${circles}${valueLabel}${labels}</svg>`;
 }
 
 function renderRoutine() {
@@ -381,7 +387,7 @@ function renderRoutine() {
     $('sessionStatus').textContent = 'Sesión no iniciada'; $('sessionStatus').className = 'session-status';
   }
   $('checkInBtn').disabled = !isToday || !assigned.length || !gyms.length || active || finished;
-  $('checkInBtn').innerHTML = active ? 'Llegada validada ✓' : finished ? 'Sesión finalizada' : 'Confirmar llegada <span>→</span>';
+  $('checkInBtn').innerHTML = active ? 'Llegada validada' : finished ? 'Sesión finalizada' : '<svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Confirmar llegada';
   $('saveWorkoutBtn').disabled = !active;
   $('finishWorkoutBtn').disabled = !active;
   $('sessionNotes').disabled = !active;
